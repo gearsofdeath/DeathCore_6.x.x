@@ -11,7 +11,7 @@ Patch 6.x.x - DDB 6.x.x (Alpha)
 - Level 100
 - Correções Diárias
 - Grande Estabilidade
-- Todas as Magias estão trabalhadas
+- Todas as Magias estão sendo trabalhadas
 - Profissionalmente Desenvolvido
 - Todas as Combinações de Classe e Raças estão sendo corrigidas e trabalhadas
 
