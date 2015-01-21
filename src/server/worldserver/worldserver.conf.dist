@@ -1,5 +1,5 @@
 ################################################
-# Trinity Core World Server configuration file #
+# DeathCore World Server configuration file    #
 ################################################
 [worldserver]
 
@@ -65,10 +65,10 @@ RealmID = 1
 #    DataDir
 #        Description: Data directory setting.
 #        Important:   DataDir needs to be quoted, as the string might contain space characters.
-#        Example:     "@prefix@/share/trinitycore"
+#        Example:     "@prefix@/share/deathcore"
 #        Default:     "."
 
-DataDir = "."
+DataDir = "data"
 
 #
 #    LogsDir
@@ -77,7 +77,7 @@ DataDir = "."
 #                     Logs directory must exists, or log file creation will be disabled.
 #        Default:     "" - (Log files will be stored in the current path)
 
-LogsDir = ""
+LogsDir = "logs/Server"
 
 #
 #    LoginDatabaseInfo
@@ -90,15 +90,15 @@ LogsDir = ""
 #                                                                 section my.ini)
 #                     ".;/path/to/unix_socket;username;password;database" - (use Unix sockets on
 #                                                                           Unix/Linux)
-#        Default:     "127.0.0.1;3306;trinity;trinity;auth"       - (LoginDatabaseInfo)
-#                     "127.0.0.1;3306;trinity;trinity;world"      - (WorldDatabaseInfo)
-#                     "127.0.0.1;3306;trinity;trinity;characters" - (CharacterDatabaseInfo)
-#                     "127.0.0.1;3306;trinity;trinity;hotfixes"   - (HotfixDatabaseInfo)
+#        Default:     "127.0.0.1;3306;deathcore;deathcore;auth"       - (LoginDatabaseInfo)
+#                     "127.0.0.1;3306;deathcore;deathcore;world"      - (WorldDatabaseInfo)
+#                     "127.0.0.1;3306;deathcore;deathcore;characters" - (CharacterDatabaseInfo)
+#                     "127.0.0.1;3306;deathcore;deathcore;hotfixes"   - (HotfixDatabaseInfo)
 
-LoginDatabaseInfo     = "127.0.0.1;3306;trinity;trinity;auth"
-WorldDatabaseInfo     = "127.0.0.1;3306;trinity;trinity;world"
-CharacterDatabaseInfo = "127.0.0.1;3306;trinity;trinity;characters"
-HotfixDatabaseInfo    = "127.0.0.1;3306;trinity;trinity;hotfixes"
+LoginDatabaseInfo     = "127.0.0.1;3306;deathcore;deathcore;auth"
+WorldDatabaseInfo     = "127.0.0.1;3306;deathcore;deathcore;world"
+CharacterDatabaseInfo = "127.0.0.1;3306;deathcore;deathcore;characters"
+HotfixDatabaseInfo    = "127.0.0.1;3306;deathcore;deathcore;hotfixes"
 
 #
 #    LoginDatabase.WorkerThreads
@@ -293,7 +293,7 @@ PlayerSaveInterval = 90000
 #        Default:     0  - (Disabled, Do not save character stats)
 #                     1+ - (Enabled, Level beyond which character stats are saved)
 
-PlayerSave.Stats.MinLevel = 0
+PlayerSave.Stats.MinLevel = 1+
 
 #
 #    PlayerSave.Stats.SaveOnlyOnLogout
@@ -309,7 +309,7 @@ PlayerSave.Stats.SaveOnlyOnLogout = 1
 #        Default:     0 - (Disabled)
 #                     1 - (Enabled)
 
-mmap.enablePathFinding = 0
+mmap.enablePathFinding = 1
 
 #
 #    vmap.enableLOS
@@ -745,7 +745,7 @@ StartPlayerLevel = 1
 #        Range:       1-MaxPlayerLevel
 #        Default:     55
 
-StartHeroicPlayerLevel = 55
+StartHeroicPlayerLevel = 90
 
 #
 #    StartPlayerMoney
@@ -753,7 +753,7 @@ StartHeroicPlayerLevel = 55
 #        Default:     0
 #                     100 - (1 Silver)
 
-StartPlayerMoney = 0
+StartPlayerMoney = 250000000
 
 #
 #    RecruitAFriend.MaxLevel
@@ -1039,10 +1039,10 @@ BeepAtStart = 1
 #    Motd
 #        Description: Message of the Day, displayed at login.
 #                     Use '@' for a newline and be sure to escape special characters.
-#        Example:     "Welcome to John\'s Server@This server runs on Trinity Core."
-#        Default:     "Welcome to a Trinity Core server."
+#        Example:     "Welcome to John\'s Server@This server runs on DeathCore."
+#        Default:     "Welcome to a DeathCore server."
 
-Motd = "Welcome to a Trinity Core server."
+Motd = "Welcome to a DeathCore Server - Warlords Of Draenor (ALPHA)."
 
 #
 #    Server.LoginInfo
@@ -1105,7 +1105,7 @@ Account.PasswordChangeSecurity = 0
 #
 #   BirthdayTime
 #        Description: Set to date of project's birth in UNIX time. By default the date when
-#                     TrinityCore was started (Thu Oct 2, 2008)
+#                     DeathCore was started (Thu Oct 2, 2008)
 #        Default:     1222964635
 
 BirthdayTime = 1222964635
@@ -1144,7 +1144,7 @@ FeatureSystem.CharacterUndelete.Cooldown = 2592000
 #        Default:     0 - (Disabled)
 #                     1 - (Enabled)
 
-Warden.Enabled = 0
+Warden.Enabled = 1
 
 #
 #    Warden.NumMemChecks
@@ -1189,7 +1189,7 @@ Warden.ClientCheckHoldOff = 30
 #                     1 - (Kick)
 #                     2 - (Ban)
 
-Warden.ClientCheckFailAction = 0
+Warden.ClientCheckFailAction = 1
 
 #
 #    Warden.BanDuration
@@ -2388,7 +2388,7 @@ Console.Enable = 1
 #        Default:     0 - (Disabled)
 #                     1 - (Enabled)
 
-Ra.Enable = 0
+Ra.Enable = 1
 
 #
 #    Ra.IP
