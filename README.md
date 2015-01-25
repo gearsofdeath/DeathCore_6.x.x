@@ -20,15 +20,20 @@ Esta é a nova source da TrinityCore estamos atualizando devagar, adicionando no
 As pessoas estão vendendo essa source para ter lucros para si mesmo, eu estou dando-lo gratuitamente.
 
 
-[dbc]()
+[dbc](https://mega.co.nz/#!G8NSTRjR!3fBjtQLLXqDfYOAL9ig-BZYGcex85f-3KLopKiXS6D8)
 
-[maps]()
+[maps](https://mega.co.nz/#!Gk1x0biS!lKv0mmuqida4-hu3SA7NJZY37_-y6Y9f8ZjoPA8xa8g)
 
-[mmaps]()
+[mmaps](https://mega.co.nz/#!q0FSwDzK!EiqbFTYqz_kBCGm0YJEs1P_zSRtMRNQjAaQ0Yg-timA)
 
-[vmaps]()
+[vmaps](https://mega.co.nz/#!2kkAlLCT!V8RASugmPA-Cz2PAlU2-rXgNBFyTcnIPjQgshyQTtsY)
 
 [Todas as Databases] ()
+
+Se caso já tenha o cliente e não deseja baixar os arquivos dbc, maps, mmaps e vmaps. Segue abaixo o link para baixar os Extractores e a Connection_Patch.
+
+
+[Ferramentas (Extractores/Connection_Patch] (https://mega.co.nz/#!ekU2FaJb!dxmKQ1Bfl2sX7j9IPRrZ9C9UysxQiPlqWstzcJP9mRc)
 
 
 
