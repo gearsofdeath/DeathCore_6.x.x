@@ -28,7 +28,10 @@ As pessoas estão vendendo essa source para ter lucros para si mesmo, eu estou d
 
 [vmaps](https://mega.co.nz/#!2kkAlLCT!V8RASugmPA-Cz2PAlU2-rXgNBFyTcnIPjQgshyQTtsY)
 
+[Cliente - World of Warcraft: Warlords of Draenor - Build 19342] (https://mega.co.nz/#!31sUiIgC!EWPiQCiC80mNVLAcaadjhnGpwnzTY4GavqNC6zajnyQ)
+
 [Todas as Databases] ()
+
 
 Se caso já tenha o cliente e não deseja baixar os arquivos dbc, maps, mmaps e vmaps. Segue abaixo o link para baixar os Extractores e a Connection_Patch.
 
