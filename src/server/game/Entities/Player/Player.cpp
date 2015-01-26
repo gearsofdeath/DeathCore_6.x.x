@@ -2977,7 +2977,9 @@ void Player::GiveLevel(uint8 level)
 
     // Refer-A-Friend
     if (GetSession()->GetRecruiterId())
+    {
         if (level < sWorld->getIntConfig(CONFIG_MAX_RECRUIT_A_FRIEND_BONUS_PLAYER_LEVEL))
+        {
             if (level % 2 == 0)
             {
                 ++m_grantableLevels;
@@ -2985,12 +2987,7 @@ void Player::GiveLevel(uint8 level)
                 if (!HasByteFlag(PLAYER_FIELD_BYTES, 1, 0x01))
                     SetByteFlag(PLAYER_FIELD_BYTES, 1, 0x01);
             }
-
-    std::list<uint32> learnList = GetSpellsForLevels(getClass(), getRaceMask(), GetTalentSpec(GetActiveTalentGroup()), oldLevel, level);
-    for (std::list<uint32>::const_iterator iter = learnList.begin(); iter != learnList.end(); iter++)
-    {
-        if (!HasSpell(*iter))
-            LearnSpell(*iter, true);
+        }
     }
 
     sScriptMgr->OnPlayerLevelChanged(this, oldLevel);
@@ -4178,12 +4175,6 @@ bool Player::ResetTalents(bool noCost, bool resetTalents, bool resetSpecializati
 
     if (resetSpecialization)
     {
-        std::list<uint32> learnList = GetSpellsForLevels(0, getRaceMask(), GetTalentSpec(GetActiveTalentGroup()), 0, getLevel());
-        for (std::list<uint32>::const_iterator iter = learnList.begin(); iter != learnList.end(); iter++)
-        {
-            if (HasSpell(*iter))
-                RemoveSpell(*iter, true);
-        }
         SetTalentSpec(GetActiveTalentGroup(), 0);
         SetUInt32Value(PLAYER_FIELD_CURRENT_SPEC_ID, 0);
     }
@@ -8590,7 +8581,7 @@ void Player::RemovedInsignia(Player* looterPlr)
 
 void Player::SendLootRelease(ObjectGuid guid)
 {
-    WorldPacket data(SMSG_LOOT_RELEASE_RESPONSE, (8+1));
+    WorldPacket data(SMSG_LOOT_RELEASE, (8+1));
     data << guid << uint8(1);
     SendDirectMessage(&data);
 }
@@ -11636,27 +11627,31 @@ InventoryResult Player::CanRollForItemInLFG(ItemTemplate const* proto, WorldObje
 }
 
 // Return stored item (if stored to stack, it can diff. from pItem). And pItem ca be deleted in this case.
-Item* Player::StoreNewItem(ItemPosCountVec const& dest, uint32 item, bool update, int32 randomPropertyId, GuidSet const& allowedLooters)
+Item* Player::StoreNewItem(ItemPosCountVec const& pos, uint32 itemId, bool update, int32 randomPropertyId /*= 0*/, GuidSet const& allowedLooters /*= GuidSet()*/, std::vector<int32> const& bonusListIDs /*= std::vector<int32>()*/)
 {
     uint32 count = 0;
-    for (ItemPosCountVec::const_iterator itr = dest.begin(); itr != dest.end(); ++itr)
+    for (ItemPosCountVec::const_iterator itr = pos.begin(); itr != pos.end(); ++itr)
         count += itr->count;
 
-    Item* pItem = Item::CreateItem(item, count, this);
-    if (pItem)
+    Item* item = Item::CreateItem(itemId, count, this);
+    if (item)
     {
-        ItemAddedQuestCheck(item, count);
-        UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, item, count);
-        UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_OWN_ITEM, item, 1);
+        ItemAddedQuestCheck(itemId, count);
+        UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, itemId, count);
+        UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_OWN_ITEM, itemId, 1);
         if (randomPropertyId)
-            pItem->SetItemRandomProperties(randomPropertyId);
-        pItem = StoreItem(dest, pItem, update);
+            item->SetItemRandomProperties(randomPropertyId);
 
-        if (allowedLooters.size() > 1 && pItem->GetTemplate()->GetMaxStackSize() == 1 && pItem->IsSoulBound())
+        for (int32 bonusListID : bonusListIDs)
+            item->AddBonuses(bonusListID);
+
+        item = StoreItem(pos, item, update);
+
+        if (allowedLooters.size() > 1 && item->GetTemplate()->GetMaxStackSize() == 1 && item->IsSoulBound())
         {
-            pItem->SetSoulboundTradeable(allowedLooters);
-            pItem->SetUInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME, GetTotalPlayedTime());
-            AddTradeableItem(pItem);
+            item->SetSoulboundTradeable(allowedLooters);
+            item->SetUInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME, GetTotalPlayedTime());
+            AddTradeableItem(item);
 
             // save data
             std::ostringstream ss;
@@ -11666,12 +11661,12 @@ Item* Player::StoreNewItem(ItemPosCountVec const& dest, uint32 item, bool update
                 ss << ' ' << *itr;
 
             PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_ITEM_BOP_TRADE);
-            stmt->setUInt64(0, pItem->GetGUID().GetCounter());
+            stmt->setUInt64(0, item->GetGUID().GetCounter());
             stmt->setString(1, ss.str());
             CharacterDatabase.Execute(stmt);
         }
     }
-    return pItem;
+    return item;
 }
 
 Item* Player::StoreItem(ItemPosCountVec const& dest, Item* pItem, bool update)
@@ -15011,7 +15006,7 @@ bool Player::SatisfyQuestLog(bool msg)
 
     if (msg)
     {
-        WorldPacket data(SMSG_QUESTLOG_FULL, 0);
+        WorldPacket data(SMSG_QUEST_LOG_FULL, 0);
         GetSession()->SendPacket(&data);
         TC_LOG_DEBUG("network", "WORLD: Sent SMSG_QUESTLOG_FULL");
     }
@@ -16335,7 +16330,7 @@ void Player::SendQuestComplete(Quest const* quest)
 {
     if (quest)
     {
-        WorldPacket data(SMSG_QUESTUPDATE_COMPLETE, 4);
+        WorldPacket data(SMSG_QUEST_UPDATE_COMPLETE, 4);
         data << uint32(quest->GetQuestId());
         GetSession()->SendPacket(&data);
         TC_LOG_DEBUG("network", "WORLD: Sent SMSG_QUESTUPDATE_COMPLETE quest = %u", quest->GetQuestId());
@@ -16395,7 +16390,7 @@ void Player::SendQuestTimerFailed(uint32 quest_id)
 {
     if (quest_id)
     {
-        WorldPacket data(SMSG_QUESTUPDATE_FAILEDTIMER, 4);
+        WorldPacket data(SMSG_QUEST_UPDATE_FAILED_TIMER, 4);
         data << uint32(quest_id);
         GetSession()->SendPacket(&data);
         TC_LOG_DEBUG("network", "WORLD: Sent SMSG_QUESTUPDATE_FAILEDTIMER");
@@ -16457,7 +16452,7 @@ void Player::SendQuestUpdateAddCredit(Quest const* quest, ObjectGuid guid, Quest
 
 void Player::SendQuestUpdateAddPlayer(Quest const* quest, uint16 newCount, uint32 required)
 {
-    WorldPacket data(SMSG_QUESTUPDATE_ADD_PVP_KILL, (3*4));
+    WorldPacket data(SMSG_QUEST_UPDATE_ADD_PVP_CREDIT, (3*4));
     TC_LOG_DEBUG("network", "WORLD: Sent SMSG_QUESTUPDATE_ADD_PVP_KILL");
     data << uint32(quest->GetQuestId());
     data << uint32(newCount);
@@ -18327,13 +18322,6 @@ void Player::_LoadSpells(PreparedQueryResult result)
             AddSpell((*result)[0].GetUInt32(), (*result)[1].GetBool(), false, false, (*result)[2].GetBool(), true);
         while (result->NextRow());
     }
-
-    std::list<uint32> learnList = GetSpellsForLevels(getClass(), getRaceMask(), GetActiveTalentSpec(), 0, getLevel());
-    for (std::list<uint32>::const_iterator iter = learnList.begin(); iter != learnList.end(); iter++)
-    {
-        if (!HasSpell(*iter))
-            LearnSpell(*iter, true);
-    }
 }
 
 void Player::_LoadGroup(PreparedQueryResult result)
@@ -18403,7 +18391,7 @@ void Player::_LoadBoundInstances(PreparedQueryResult result)
             }
             else
             {
-                MapDifficulty const* mapDiff = GetMapDifficultyData(mapId, Difficulty(difficulty));
+                MapDifficultyEntry const* mapDiff = GetMapDifficultyData(mapId, Difficulty(difficulty));
                 if (!mapDiff)
                 {
                     TC_LOG_ERROR("entities.player", "_LoadBoundInstances: player %s(%s) has bind to not existed difficulty %d instance for map %u (%s)", GetName().c_str(), GetGUID().ToString().c_str(), difficulty, mapId, mapname.c_str());
@@ -18439,7 +18427,7 @@ void Player::_LoadBoundInstances(PreparedQueryResult result)
 InstancePlayerBind* Player::GetBoundInstance(uint32 mapid, Difficulty difficulty)
 {
     // some instances only have one difficulty
-    MapDifficulty const* mapDiff = GetDownscaledMapDifficultyData(mapid, difficulty);
+    MapDifficultyEntry const* mapDiff = GetDownscaledMapDifficultyData(mapid, difficulty);
     if (!mapDiff)
         return NULL;
 
@@ -18726,14 +18714,14 @@ bool Player::Satisfy(AccessRequirement const* ar, uint32 target_map, bool report
                 missingAchievement = ar->achievement;
 
         Difficulty target_difficulty = GetDifficultyID(mapEntry);
-        MapDifficulty const* mapDiff = GetDownscaledMapDifficultyData(target_map, target_difficulty);
+        MapDifficultyEntry const* mapDiff = GetDownscaledMapDifficultyData(target_map, target_difficulty);
         if (LevelMin || LevelMax || missingItem || missingQuest || missingAchievement)
         {
             if (report)
             {
                 if (missingQuest && !ar->questFailedText.empty())
                     ChatHandler(GetSession()).PSendSysMessage("%s", ar->questFailedText.c_str());
-                else if (mapDiff->hasErrorMessage) // if (missingAchievement) covered by this case
+                else if (mapDiff->HasMessage()) // if (missingAchievement) covered by this case
                     SendTransferAborted(target_map, TRANSFER_ABORT_DIFFICULTY, target_difficulty);
                 else if (missingItem)
                     GetSession()->SendAreaTriggerMessage(GetSession()->GetTrinityString(LANG_LEVEL_MINREQUIRED_AND_ITEM), LevelMin, sObjectMgr->GetItemTemplate(missingItem)->GetName(GetSession()->GetSessionDbcLocale()));
@@ -22926,7 +22914,7 @@ void Player::SendInitialPacketsBeforeAddToMap()
     WorldPackets::Misc::WorldServerInfo worldServerInfo;
     worldServerInfo.IneligibleForLootMask.Clear();     /// @todo
     worldServerInfo.WeeklyReset = sWorld->GetNextWeeklyQuestsResetTime() - WEEK;
-    worldServerInfo.InstanceGroupSize.Set(GetMap()->GetMapDifficulty()->maxPlayers);
+    worldServerInfo.InstanceGroupSize.Set(GetMap()->GetMapDifficulty()->MaxPlayers);
     worldServerInfo.IsTournamentRealm = 0;             /// @todo
     worldServerInfo.RestrictedAccountMaxLevel.Clear(); /// @todo
     worldServerInfo.RestrictedAccountMaxMoney.Clear(); /// @todo
@@ -25014,7 +25002,7 @@ void Player::AutoStoreLoot(uint8 bag, uint8 slot, uint32 loot_id, LootStore cons
             continue;
         }
 
-        Item* pItem = StoreNewItem(dest, lootItem->itemid, true, lootItem->randomPropertyId);
+        Item* pItem = StoreNewItem(dest, lootItem->itemid, true, lootItem->randomPropertyId, GuidSet(), lootItem->BonusListIDs);
         SendNewItem(pItem, lootItem->count, false, false, broadcast);
     }
 }
@@ -25050,7 +25038,7 @@ void Player::StoreLootItem(uint8 lootSlot, Loot* loot)
     InventoryResult msg = CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, item->itemid, item->count);
     if (msg == EQUIP_ERR_OK)
     {
-        Item* newitem = StoreNewItem(dest, item->itemid, true, item->randomPropertyId, item->GetAllowedLooters());
+        Item* newitem = StoreNewItem(dest, item->itemid, true, item->randomPropertyId, item->GetAllowedLooters(), item->BonusListIDs);
 
         if (qitem)
         {
@@ -25495,13 +25483,6 @@ void Player::LearnTalentSpecialization(uint32 talentSpec)
     }
 
     SendTalentsInfoData();
-
-    std::list<uint32> learnList = GetSpellsForLevels(0, getRaceMask(), GetActiveTalentSpec(), 0, getLevel());
-    for (std::list<uint32>::const_iterator iter = learnList.begin(); iter != learnList.end(); iter++)
-    {
-        if (!HasSpell(*iter))
-            LearnSpell(*iter, true);
-    }
 
     SaveToDB();
 
@@ -26066,14 +26047,6 @@ void Player::ActivateTalentGroup(uint8 group)
                 RemoveSpell(effect->TriggerSpell, true);
     }
 
-    // Unlearn specialization specific spells
-    std::list<uint32> learnList = GetSpellsForLevels(0, getRaceMask(), GetActiveTalentSpec(), 0, getLevel());
-    for (std::list<uint32>::const_iterator iter = learnList.begin(); iter != learnList.end(); iter++)
-    {
-        if (HasSpell(*iter))
-            RemoveSpell(*iter, true);
-    }
-
     // remove glyphs
     for (uint8 slot = 0; slot < MAX_GLYPH_SLOT_INDEX; ++slot)
         // remove secondary glyph
@@ -26085,13 +26058,6 @@ void Player::ActivateTalentGroup(uint8 group)
     SetActiveTalentGroup(group);
 
     uint32 spentTalents = 0;
-
-    learnList = GetSpellsForLevels(getClass(), getRaceMask(), GetActiveTalentSpec(), 0, getLevel());
-    for (std::list<uint32>::const_iterator iter = learnList.begin(); iter != learnList.end(); iter++)
-    {
-        if (!HasSpell(*iter))
-            LearnSpell(*iter, true);
-    }
 
     for (uint32 talentId = 0; talentId < sTalentStore.GetNumRows(); ++talentId)
     {
@@ -26657,8 +26623,8 @@ VoidStorageItem* Player::GetVoidStorageItem(uint64 id, uint8& slot) const
 void Player::SendMovementSetCanTransitionBetweenSwimAndFly(bool apply)
 {
     Movement::PacketSender(this, static_cast<OpcodeServer>(NULL_OPCODE), apply ?
-        SMSG_MOVE_SET_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY :
-        SMSG_MOVE_UNSET_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY).Send();
+        SMSG_MOVE_ENABLE_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY :
+        SMSG_MOVE_DISABLE_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY).Send();
 }
 
 void Player::SendMovementSetCollisionHeight(float height)
@@ -27197,7 +27163,7 @@ Difficulty Player::GetDifficultyID(MapEntry const* mapEntry) const
     if (!mapEntry->IsRaid())
         return m_dungeonDifficulty;
 
-    MapDifficulty const* defaultDifficulty = GetDefaultMapDifficulty(mapEntry->ID);
+    MapDifficultyEntry const* defaultDifficulty = GetDefaultMapDifficulty(mapEntry->ID);
     if (!defaultDifficulty)
         return m_legacyRaidDifficulty;
 
@@ -27229,7 +27195,7 @@ Difficulty Player::CheckLoadedRaidDifficultyID(Difficulty difficulty)
     if (!difficultyEntry)
         return DIFFICULTY_NORMAL_RAID;
 
-    if (difficultyEntry->InstanceType != MAP_INSTANCE)
+    if (difficultyEntry->InstanceType != MAP_RAID)
         return DIFFICULTY_NORMAL_RAID;
 
     if (!(difficultyEntry->Flags & DIFFICULTY_FLAG_CAN_SELECT) || (difficultyEntry->Flags & DIFFICULTY_FLAG_LEGACY))
@@ -27244,7 +27210,7 @@ Difficulty Player::CheckLoadedLegacyRaidDifficultyID(Difficulty difficulty)
     if (!difficultyEntry)
         return DIFFICULTY_10_N;
 
-    if (difficultyEntry->InstanceType != MAP_INSTANCE)
+    if (difficultyEntry->InstanceType != MAP_RAID)
         return DIFFICULTY_10_N;
 
     if (!(difficultyEntry->Flags & DIFFICULTY_FLAG_CAN_SELECT) || !(difficultyEntry->Flags & DIFFICULTY_FLAG_LEGACY))

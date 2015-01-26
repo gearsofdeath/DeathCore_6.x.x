@@ -805,7 +805,7 @@ void Group::Disband(bool hideDestroy /* = false */)
 
 void Group::SendLootStartRoll(uint32 countDown, uint32 mapid, const Roll &r)
 {
-    WorldPacket data(SMSG_LOOT_START_ROLL, (8+4+4+4+4+4+4+1));
+    WorldPacket data(SMSG_START_LOOT_ROLL, (8+4+4+4+4+4+4+1));
     data << r.itemGUID;                                     // guid of rolled item
     data << uint32(mapid);                                  // 3.3.3 mapid
     data << uint32(r.itemSlot);                             // itemslot
@@ -833,7 +833,7 @@ void Group::SendLootStartRollToPlayer(uint32 countDown, uint32 mapId, Player* p,
     if (!p || !p->GetSession())
         return;
 
-    WorldPacket data(SMSG_LOOT_START_ROLL, (8 + 4 + 4 + 4 + 4 + 4 + 4 + 1));
+    WorldPacket data(SMSG_START_LOOT_ROLL, (8 + 4 + 4 + 4 + 4 + 4 + 4 + 1));
     data << r.itemGUID;                                     // guid of rolled item
     data << uint32(mapId);                                  // 3.3.3 mapid
     data << uint32(r.itemSlot);                             // itemslot
@@ -1388,7 +1388,7 @@ void Group::CountTheRoll(Rolls::iterator rollI)
                     item->is_looted = true;
                     roll->getLoot()->NotifyItemRemoved(roll->itemSlot);
                     roll->getLoot()->unlootedCount--;
-                    player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId, item->GetAllowedLooters());
+                    player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId, item->GetAllowedLooters(), item->BonusListIDs);
                 }
                 else
                 {
@@ -1440,7 +1440,7 @@ void Group::CountTheRoll(Rolls::iterator rollI)
                         item->is_looted = true;
                         roll->getLoot()->NotifyItemRemoved(roll->itemSlot);
                         roll->getLoot()->unlootedCount--;
-                        player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId, item->GetAllowedLooters());
+                        player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId, item->GetAllowedLooters(), item->BonusListIDs);
                     }
                     else
                     {
@@ -1504,7 +1504,7 @@ void Group::SetTargetIcon(uint8 id, ObjectGuid whoGuid, ObjectGuid targetGuid)
 
     m_targetIcons[id] = targetGuid;
 
-    WorldPacket data(MSG_RAID_TARGET_UPDATE, (1+8+1+8));
+    WorldPacket data(SMSG_SEND_RAID_TARGET_UPDATE_SINGLE, (1+8+1+8));
     data << uint8(0);                                       // set targets
     data << whoGuid;
     data << uint8(id);
@@ -1517,7 +1517,7 @@ void Group::SendTargetIconList(WorldSession* session)
     if (!session)
         return;
 
-    WorldPacket data(MSG_RAID_TARGET_UPDATE, (1+TARGETICONCOUNT*9));
+    WorldPacket data(SMSG_SEND_RAID_TARGET_UPDATE_ALL, (1+TARGETICONCOUNT*9));
     data << uint8(1);                                       // list targets
 
     for (uint8 i = 0; i < TARGETICONCOUNT; ++i)
@@ -2003,7 +2003,7 @@ Difficulty Group::GetDifficultyID(MapEntry const* mapEntry) const
     if (!mapEntry->IsRaid())
         return m_dungeonDifficulty;
 
-    MapDifficulty const* defaultDifficulty = GetDefaultMapDifficulty(mapEntry->ID);
+    MapDifficultyEntry const* defaultDifficulty = GetDefaultMapDifficulty(mapEntry->ID);
     if (!defaultDifficulty)
         return m_legacyRaidDifficulty;
 

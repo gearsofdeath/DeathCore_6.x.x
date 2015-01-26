@@ -159,9 +159,9 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     if (mInstance)
     {
         Difficulty diff = GetPlayer()->GetDifficultyID(mEntry);
-        if (MapDifficulty const* mapDiff = GetMapDifficultyData(mEntry->ID, diff))
+        if (MapDifficultyEntry const* mapDiff = GetMapDifficultyData(mEntry->ID, diff))
         {
-            if (mapDiff->resetTime)
+            if (mapDiff->RaidDuration)
             {
                 if (time_t timeReset = sInstanceSaveMgr->GetResetTimeFor(mEntry->ID, diff))
                 {
@@ -511,7 +511,7 @@ void WorldSession::HandleMoveNotActiveMover(WorldPacket &recvData)
 
 void WorldSession::HandleMountSpecialAnimOpcode(WorldPacket& /*recvData*/)
 {
-    WorldPacket data(SMSG_MOUNTSPECIAL_ANIM, 8);
+    WorldPacket data(SMSG_SPECIAL_MOUNT_ANIM, 8);
     data << GetPlayer()->GetGUID();
 
     GetPlayer()->SendMessageToSet(&data, false);
