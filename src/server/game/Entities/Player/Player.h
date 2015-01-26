@@ -71,7 +71,7 @@ enum SkillFieldOffset
     SKILL_PERM_BONUS_OFFSET = SKILL_TEMP_BONUS_OFFSET + 64
 };
 
-#define PLAYER_EXPLORED_ZONES_SIZE  189
+#define PLAYER_EXPLORED_ZONES_SIZE  200
 
 // Note: SPELLMOD_* values is aura types in fact
 enum SpellModType
@@ -1455,7 +1455,7 @@ class Player : public Unit, public GridObject<Player>
         InventoryResult CanUseItem(ItemTemplate const* pItem) const;
         InventoryResult CanUseAmmo(uint32 item) const;
         InventoryResult CanRollForItemInLFG(ItemTemplate const* item, WorldObject const* lootedObject) const;
-        Item* StoreNewItem(ItemPosCountVec const& pos, uint32 item, bool update, int32 randomPropertyId = 0, GuidSet const& allowedLooters = GuidSet());
+        Item* StoreNewItem(ItemPosCountVec const& pos, uint32 itemId, bool update, int32 randomPropertyId = 0, GuidSet const& allowedLooters = GuidSet(), std::vector<int32> const& bonusListIDs = std::vector<int32>());
         Item* StoreItem(ItemPosCountVec const& pos, Item* pItem, bool update);
         Item* EquipNewItem(uint16 pos, uint32 item, bool update);
         Item* EquipItem(uint16 pos, Item* pItem, bool update);

@@ -1027,10 +1027,10 @@ void Creature::SaveToDB(uint32 mapid, uint32 spawnMask, uint32 phaseMask)
     stmt->setUInt64(index++, m_DBTableGuid);
     stmt->setUInt32(index++, GetEntry());
     stmt->setUInt16(index++, uint16(mapid));
-    stmt->setUInt8(index++, spawnMask);
+    stmt->setUInt32(index++, spawnMask);
     stmt->setUInt32(index++, GetPhaseMask());
     stmt->setUInt32(index++, displayId);
-    stmt->setInt32(index++, int32(GetCurrentEquipmentId()));
+    stmt->setUInt8(index++, GetCurrentEquipmentId());
     stmt->setFloat(index++, GetPositionX());
     stmt->setFloat(index++, GetPositionY());
     stmt->setFloat(index++, GetPositionZ());
@@ -1642,7 +1642,7 @@ bool Creature::IsImmunedToSpell(SpellInfo const* spellInfo) const
 
 bool Creature::IsImmunedToSpellEffect(SpellInfo const* spellInfo, uint32 index) const
 {
-    SpellEffectInfo const* effect = spellInfo->GetEffect(GetMap()->GetDifficultyID());
+    SpellEffectInfo const* effect = spellInfo->GetEffect(this, index);
     if (!effect)
         return true;
     if (GetCreatureTemplate()->MechanicImmuneMask & (1 << (effect->Mechanic - 1)))
