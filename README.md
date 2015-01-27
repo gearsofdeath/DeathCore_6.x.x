@@ -6,7 +6,7 @@
 
 #Informações Gerais do Projeto
 
-Patch 6.x.x - DDB 6.x.x (Alpha)
+Patch 6.x.x - NDP-DB 6.x.x (Alpha)
 
 - Level 100
 - Correções Diárias
@@ -30,7 +30,7 @@ Links para fazer download:
 
 [Cliente - World of Warcraft: Warlords of Draenor - Build 19342] (https://mega.co.nz/#!31sUiIgC!EWPiQCiC80mNVLAcaadjhnGpwnzTY4GavqNC6zajnyQ)
 
-[Todas as Databases - Em Breve]
+[Todas as Databases - Em Breve]()
 
 
 Se caso já tenha o cliente e não deseja baixar os arquivos dbc, maps, mmaps e vmaps. Segue abaixo o link para baixar os Extractores e a Connection_Patch.
