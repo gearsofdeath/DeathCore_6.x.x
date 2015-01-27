@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+
 /* Notes :
 Xin le Maître d'armes : Script 0%					A faire : vérifier si les sorts fonctionnent.
 

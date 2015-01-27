@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "ScriptMgr.h"
 #include "InstanceScript.h"
 #include "terrace_of_the_endless_spring.h"

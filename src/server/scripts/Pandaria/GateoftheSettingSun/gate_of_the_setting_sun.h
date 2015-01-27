@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+
 #ifndef DEF_GATE_OF_THE_SETTING_SUN_H_
 #define DEF_GATE_OF_THE_SETTING_SUN_H_
 

@@ -14,8 +14,9 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#define DEF_STORMSTOUT_BREWERY_H_
+
+
+#ifndef DEF_STORMSTOUT_BREWERY_H_
 #define DEF_STORMSTOUT_BREWERY_H_
 
 #define MAX_ENCOUNTERS 3

@@ -15,6 +15,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "ScriptMgr.h"
 #include "InstanceScript.h"
 #include "gate_of_the_setting_sun.h"

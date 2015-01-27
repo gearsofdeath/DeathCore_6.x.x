@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+
 #ifndef DEF_SHADOPAN_MONASTERY_H
 #define DEF_SHADOPAN_MONASTERY_H
 

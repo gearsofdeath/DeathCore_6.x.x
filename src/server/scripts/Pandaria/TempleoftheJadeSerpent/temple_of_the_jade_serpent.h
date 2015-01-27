@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+
 #ifndef DEF_TEMPLE_OF_THE_JADE_SERPENT_H
 #define DEF_TEMPLE_OF_THE_JADE_SERPENT_H
 

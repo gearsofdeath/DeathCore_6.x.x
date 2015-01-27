@@ -15,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptMgr.h"
+
+#include "ScriptPCH.h"
 #include "SpellScript.h"
 #include "mogushan_palace.h"
 

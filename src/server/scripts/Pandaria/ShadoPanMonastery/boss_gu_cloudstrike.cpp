@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
-/* # Script de Tydrheal : Gu Cloudstrike # */
+
 
 /* Notes : Il faudra tester les scripts et vérifier les sorts ainsi qu'ajouter les SoundID SAY_PHASE3 ("Puissance ! Glorieuse puissance !")
 Ajouter l'ID du NPC_TRIGGER

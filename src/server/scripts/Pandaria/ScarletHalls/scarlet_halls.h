@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+
 #ifndef DEF_SCARLET_HALLS_H_
 #define DEF_SCARLET_HALLS_H_
 

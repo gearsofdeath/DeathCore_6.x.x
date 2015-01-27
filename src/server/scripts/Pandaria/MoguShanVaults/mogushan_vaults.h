@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+
 #ifndef DEF_MOGUSHAN_VAULTS_H_
 #define DEF_MOGUSHAN_VAULTS_H_
 

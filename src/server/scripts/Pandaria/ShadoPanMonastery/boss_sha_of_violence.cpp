@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
- 
-/* # Script de Tydrheal : Sha Of Violence # */
+
 
 /* Notes : Tester -- voir spells -- Ajouter SoundID
 Sha of violence : Script 95% reste seulement à vérifier les spells		
