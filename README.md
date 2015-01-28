@@ -15,9 +15,9 @@ Patch 6.x.x - DDB 6.x.x (Alpha)
 - Profissionalmente Desenvolvido
 - Todas as Combinações de Classe e Raças estão sendo corrigidas e trabalhadas
 
-Esta é a nova source da TrinityCore estamos atualizando devagar, adicionando novos scripts e novidades, se você quiser nos ajudar neste projeto toda a ajuda será bem vinda! Atenciosamente, Noffearr.
+Esta é a nova source da DeathCore que estamos atualizando devagar, adicionando novos scripts e novidades, e se você quiser nos ajudar neste projeto, ficaremos gratos! Toda a ajuda será bem vinda! Atenciosamente, Equipe Noffearr Death ProjecT™.
 
-As pessoas estão vendendo essa source para ter lucros para si mesmo, eu estou dando-lo gratuitamente.
+Links para fazer download:
 
 
 [dbc](https://mega.co.nz/#!G8NSTRjR!3fBjtQLLXqDfYOAL9ig-BZYGcex85f-3KLopKiXS6D8)
@@ -30,7 +30,7 @@ As pessoas estão vendendo essa source para ter lucros para si mesmo, eu estou d
 
 [Cliente - World of Warcraft: Warlords of Draenor - Build 19342] (https://mega.co.nz/#!31sUiIgC!EWPiQCiC80mNVLAcaadjhnGpwnzTY4GavqNC6zajnyQ)
 
-[Todas as Databases - Em Breve] ()
+[Todas as Databases - Em Breve]
 
 
 Se caso já tenha o cliente e não deseja baixar os arquivos dbc, maps, mmaps e vmaps. Segue abaixo o link para baixar os Extractores e a Connection_Patch.
@@ -74,7 +74,7 @@ Guias de instalação detalhadas estão disponíveis no wiki para
 
 ## Reportações
 
-Não relatar problemas neste repo até estabilizar
+Não relatar problemas neste repo até estabilizar.
 
 ## Correções
 
