@@ -28,7 +28,7 @@ Links para fazer download:
 
 [vmaps](https://mega.co.nz/#!2kkAlLCT!V8RASugmPA-Cz2PAlU2-rXgNBFyTcnIPjQgshyQTtsY)
 
-[Cliente - World of Warcraft: Warlords of Draenor - Build 19342] (https://mega.co.nz/#!31sUiIgC!EWPiQCiC80mNVLAcaadjhnGpwnzTY4GavqNC6zajnyQ)
+[Cliente - World of Warcraft: Warlords of Draenor - Build 19342] (https://mega.co.nz/#!yw9gHaKI!7jznvt4b4A_c0LYxkZMk-ECaJayya4zYfLj081NEpPQ)
 
 [Todas as Databases - Em Breve]()
 
