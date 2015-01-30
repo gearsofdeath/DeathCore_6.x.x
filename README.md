@@ -30,7 +30,7 @@ Links para fazer download:
 
 [Cliente - World of Warcraft: Warlords of Draenor - Build 19342] (https://mega.co.nz/#!yw9gHaKI!7jznvt4b4A_c0LYxkZMk-ECaJayya4zYfLj081NEpPQ)
 
-[Todas as Databases - Em Breve]()
+[Todas as Databases - NDP-DB 6.x.x (Alpha)](https://mega.co.nz/#!vk0wmZCS!4smlLvx02ZmLbje9sK7YJaoM6LzS9bZlyCP_RYtIXNo)
 
 
 Se caso já tenha o cliente e não deseja baixar os arquivos dbc, maps, mmaps e vmaps. Segue abaixo o link para baixar os Extractores e a Connection_Patch.
