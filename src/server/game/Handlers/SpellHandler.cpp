@@ -320,109 +320,53 @@ void WorldSession::HandleGameobjectReportUse(WorldPackets::GameObject::GameObjec
     _player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_USE_GAMEOBJECT, go->GetEntry());
 }
 
-void WorldSession::HandleCastSpellOpcode(WorldPackets::Spells::SpellCastRequest& castRequest)
+void WorldSession::HandleCastSpellOpcode(WorldPackets::Spells::CastSpell& cast)
 {
     // ignore for remote control state (for player case)
     Unit* mover = _player->m_mover;
     if (mover != _player && mover->GetTypeId() == TYPEID_PLAYER)
-    {
         return;
-    }
 
-    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(castRequest.SpellID);
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(cast.Cast.SpellID);
     if (!spellInfo)
     {
-        TC_LOG_ERROR("network", "WORLD: unknown spell id %u", castRequest.SpellID);
+        TC_LOG_ERROR("network", "WORLD: unknown spell id %u", cast.Cast.SpellID);
         return;
     }
 
     if (spellInfo->IsPassive())
-    {
         return;
-    }
 
     Unit* caster = mover;
-    if (caster->GetTypeId() == TYPEID_UNIT && !caster->ToCreature()->HasSpell(castRequest.SpellID))
+    if (caster->GetTypeId() == TYPEID_UNIT && !caster->ToCreature()->HasSpell(spellInfo->Id))
     {
         // If the vehicle creature does not have the spell but it allows the passenger to cast own spells
         // change caster to player and let him cast
         if (!_player->IsOnVehicle(caster) || spellInfo->CheckVehicle(_player) != SPELL_CAST_OK)
-        {
             return;
-        }
 
         caster = _player;
     }
 
-    if (caster->GetTypeId() == TYPEID_PLAYER && !caster->ToPlayer()->HasActiveSpell(castRequest.SpellID))
-    {
-        // not have spell in spellbook
+    // check known spell
+    if (caster->GetTypeId() == TYPEID_PLAYER && !caster->ToPlayer()->HasActiveSpell(spellInfo->Id))
         return;
-    }
 
-    if (Player* plr = caster->ToPlayer())
-    {
-        uint32 specId = plr->GetActiveTalentSpec();
-        if (specId)
-        {
-            if (sSpecializationOverrideSpellMap.find(specId) != sSpecializationOverrideSpellMap.end())
-            {
-                if (sSpecializationOverrideSpellMap[specId].find(castRequest.SpellID) != sSpecializationOverrideSpellMap[specId].end())
-                {
-                    SpellInfo const* newSpellInfo = sSpellMgr->GetSpellInfo(sSpecializationOverrideSpellMap[specId][castRequest.SpellID]);
-                    if (newSpellInfo)
-                    {
-                        if (newSpellInfo->SpellLevel <= caster->getLevel())
-                        {
-                            spellInfo = newSpellInfo;
-                            castRequest.SpellID = newSpellInfo->Id;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Unit::AuraEffectList swaps = mover->GetAuraEffectsByType(SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS);
-    Unit::AuraEffectList const& swaps2 = mover->GetAuraEffectsByType(SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_2);
-    if (!swaps2.empty())
-        swaps.insert(swaps.end(), swaps2.begin(), swaps2.end());
-
-    if (!swaps.empty())
-    {
-        for (Unit::AuraEffectList::const_iterator itr = swaps.begin(); itr != swaps.end(); ++itr)
-        {
-            if ((*itr)->IsAffectingSpell(spellInfo))
-            {
-                if (SpellInfo const* newInfo = sSpellMgr->GetSpellInfo((*itr)->GetAmount()))
-                {
-                    spellInfo = newInfo;
-                    castRequest.SpellID = newInfo->Id;
-                }
-                break;
-            }
-        }
-    }
+    // Check possible spell cast overrides
+    spellInfo = caster->GetCastSpellInfo(spellInfo);
 
     // Client is resending autoshot cast opcode when other spell is cast during shoot rotation
     // Skip it to prevent "interrupt" message
     if (spellInfo->IsAutoRepeatRangedSpell() && caster->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)
         && caster->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)->m_spellInfo == spellInfo)
-    {
         return;
-    }
 
     // can't use our own spells when we're in possession of another unit,
     if (_player->isPossessing())
-    {
         return;
-    }
 
     // client provided targets
-    SpellCastTargets targets(caster, castRequest.TargetFlags, castRequest.UnitGuid, castRequest.ItemGuid, castRequest.SrcTransportGuid, castRequest.DstTransportGuid, castRequest.SrcPos, castRequest.DstPos, castRequest.Pitch, castRequest.Speed, castRequest.Name);
-
-
-    //HandleClientCastFlags(recvPacket, castFlags, targets);
+    SpellCastTargets targets(caster, cast.Cast.Target);
 
     // auto-selection buff level base at target level (in spellInfo)
     if (targets.GetUnitTarget())
@@ -435,8 +379,8 @@ void WorldSession::HandleCastSpellOpcode(WorldPackets::Spells::SpellCastRequest&
     }
 
     Spell* spell = new Spell(caster, spellInfo, TRIGGERED_NONE, ObjectGuid::Empty, false);
-    spell->m_cast_count = castRequest.CastID;                       // set count of casts
-    spell->m_glyphIndex = castRequest.Misc; // 6.x Misc is just a guess
+    spell->m_cast_count = cast.Cast.CastID;                         // set count of casts
+    spell->m_misc.Data = cast.Cast.Misc;                            // 6.x Misc is just a guess
     spell->prepare(&targets);
 }
 
@@ -451,16 +395,9 @@ void WorldSession::HandleCancelCastOpcode(WorldPacket& recvPacket)
         _player->InterruptNonMeleeSpells(false, spellId, false);
 }
 
-void WorldSession::HandleCancelAuraOpcode(WorldPacket& recvPacket)
+void WorldSession::HandleCancelAuraOpcode(WorldPackets::Spells::CancelAura& cancelAura)
 {
-    uint32 spellId;
-    recvPacket >> spellId;
-
-    ObjectGuid guid;
-    recvPacket >> guid;
-
-
-    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(cancelAura.SpellID);
     if (!spellInfo)
         return;
 
@@ -472,7 +409,7 @@ void WorldSession::HandleCancelAuraOpcode(WorldPacket& recvPacket)
     if (spellInfo->IsChanneled())
     {
         if (Spell* curSpell = _player->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
-            if (curSpell->m_spellInfo->Id == spellId)
+            if (curSpell->GetSpellInfo()->Id == cancelAura.SpellID)
                 _player->InterruptSpell(CURRENT_CHANNELED_SPELL);
         return;
     }
@@ -483,8 +420,7 @@ void WorldSession::HandleCancelAuraOpcode(WorldPacket& recvPacket)
     if (!spellInfo->IsPositive() || spellInfo->IsPassive())
         return;
 
-    // maybe should only remove one buff when there are multiple?
-    _player->RemoveOwnedAura(spellId, ObjectGuid::Empty, 0, AURA_REMOVE_BY_CANCEL);
+    _player->RemoveOwnedAura(cancelAura.SpellID, cancelAura.CasterGUID, 0, AURA_REMOVE_BY_CANCEL);
 
     // If spell being removed is a resource tracker, see if player was tracking both (herbs / minerals) and remove the other
     if (sWorld->getBoolConfig(CONFIG_ALLOW_TRACK_BOTH_RESOURCES) && spellInfo->HasAura(DIFFICULTY_NONE, SPELL_AURA_TRACK_RESOURCES))
@@ -501,7 +437,7 @@ void WorldSession::HandleCancelAuraOpcode(WorldPacket& recvPacket)
 
             // Remove all auras related to resource tracking (only Herbs and Minerals in 3.3.5a)
             for (std::list<uint32>::iterator it = spellIDs.begin(); it != spellIDs.end(); ++it)
-                _player->RemoveOwnedAura(*it, ObjectGuid::Empty, 0, AURA_REMOVE_BY_CANCEL);
+                _player->RemoveOwnedAura(*it, cancelAura.CasterGUID, 0, AURA_REMOVE_BY_CANCEL);
         }
     }
 }

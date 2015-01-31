@@ -640,7 +640,7 @@ void WorldSession::KickPlayer()
     }
 }
 
-void WorldSession::SendNotification(const char *format, ...)
+void WorldSession::SendNotification(char const* format, ...)
 {
     if (format)
     {
@@ -660,15 +660,15 @@ void WorldSession::SendNotification(const char *format, ...)
     }
 }
 
-void WorldSession::SendNotification(uint32 string_id, ...)
+void WorldSession::SendNotification(uint32 stringId, ...)
 {
-    char const* format = GetTrinityString(string_id);
+    char const* format = GetTrinityString(stringId);
     if (format)
     {
         va_list ap;
         char szStr[1024];
         szStr[0] = '\0';
-        va_start(ap, string_id);
+        va_start(ap, stringId);
         vsnprintf(szStr, 1024, format, ap);
         va_end(ap);
 
@@ -701,12 +701,6 @@ void WorldSession::Handle_EarlyProccess(WorldPacket& recvPacket)
 void WorldSession::Handle_ServerSide(WorldPacket& recvPacket)
 {
     TC_LOG_ERROR("network.opcode", "Received server-side opcode %s from %s"
-        , GetOpcodeNameForLogging(static_cast<OpcodeClient>(recvPacket.GetOpcode())).c_str(), GetPlayerInfo().c_str());
-}
-
-void WorldSession::Handle_Deprecated(WorldPacket& recvPacket)
-{
-    TC_LOG_ERROR("network.opcode", "Received deprecated opcode %s from %s"
         , GetOpcodeNameForLogging(static_cast<OpcodeClient>(recvPacket.GetOpcode())).c_str(), GetPlayerInfo().c_str());
 }
 
@@ -1285,7 +1279,7 @@ uint32 WorldSession::DosProtection::GetMaxPacketCounterAllowed(uint16 opcode) co
         case CMSG_MESSAGECHAT_YELL:                     //   0               3.5
         case CMSG_INSPECT:                              //   0               3.5
         //case CMSG_AREA_SPIRIT_HEALER_QUERY:             // not profiled
-        case CMSG_STANDSTATECHANGE:                     // not profiled
+        case CMSG_STAND_STATE_CHANGE:                     // not profiled
         case CMSG_RANDOM_ROLL:                          // not profiled
         case CMSG_TIME_SYNC_RESPONSE:                   // not profiled
         case CMSG_TRAINER_BUY_SPELL:                    // not profiled

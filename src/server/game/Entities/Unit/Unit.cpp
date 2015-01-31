@@ -63,6 +63,7 @@
 #include "MovementStructures.h"
 #include "WorldSession.h"
 #include "ChatPackets.h"
+#include "MiscPackets.h"
 #include "MovementPackets.h"
 #include "CombatPackets.h"
 #include "CombatLogPackets.h"
@@ -12599,7 +12600,7 @@ void Unit::StopMoving()
 
 bool Unit::IsSitState() const
 {
-    uint8 s = getStandState();
+    UnitStandStateType s = GetStandState();
     return
         s == UNIT_STAND_STATE_SIT_CHAIR        || s == UNIT_STAND_STATE_SIT_LOW_CHAIR  ||
         s == UNIT_STAND_STATE_SIT_MEDIUM_CHAIR || s == UNIT_STAND_STATE_SIT_HIGH_CHAIR ||
@@ -12608,22 +12609,21 @@ bool Unit::IsSitState() const
 
 bool Unit::IsStandState() const
 {
-    uint8 s = getStandState();
+    UnitStandStateType s = GetStandState();
     return !IsSitState() && s != UNIT_STAND_STATE_SLEEP && s != UNIT_STAND_STATE_KNEEL;
 }
 
-void Unit::SetStandState(uint8 state)
+void Unit::SetStandState(UnitStandStateType state)
 {
-    SetByteValue(UNIT_FIELD_BYTES_1, 0, state);
+    SetByteValue(UNIT_FIELD_BYTES_1, 0, uint8(state));
 
     if (IsStandState())
        RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_SEATED);
 
     if (GetTypeId() == TYPEID_PLAYER)
     {
-        WorldPacket data(SMSG_STANDSTATE_UPDATE, 1);
-        data << (uint8)state;
-        ToPlayer()->GetSession()->SendPacket(&data);
+        WorldPackets::Misc::StandStateUpdate packet(state);
+        ToPlayer()->GetSession()->SendPacket(packet.Write());
     }
 }
 
@@ -16568,4 +16568,19 @@ void Unit::Whisper(uint32 textId, Player* target, bool isBossWhisper /*= false*/
     WorldPackets::Chat::Chat packet;
     packet.Initalize(isBossWhisper ? CHAT_MSG_RAID_BOSS_WHISPER : CHAT_MSG_MONSTER_WHISPER, LANG_UNIVERSAL, this, target, DB2Manager::GetBroadcastTextValue(bct, locale, getGender()), 0, "", locale);
     target->SendDirectMessage(packet.Write());
+}
+
+SpellInfo const* Unit::GetCastSpellInfo(SpellInfo const* spellInfo) const
+{
+    Unit::AuraEffectList swaps = GetAuraEffectsByType(SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS);
+    Unit::AuraEffectList const& swaps2 = GetAuraEffectsByType(SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_2);
+    if (!swaps2.empty())
+        swaps.insert(swaps.end(), swaps2.begin(), swaps2.end());
+
+    for (AuraEffect const* auraEffect : swaps)
+        if (auraEffect->IsAffectingSpell(spellInfo))
+            if (SpellInfo const* newInfo = sSpellMgr->GetSpellInfo(auraEffect->GetAmount()))
+                return newInfo;
+
+    return spellInfo;
 }
