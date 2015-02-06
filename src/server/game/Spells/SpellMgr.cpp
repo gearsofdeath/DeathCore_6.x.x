@@ -3072,6 +3072,8 @@ void SpellMgr::LoadSpellInfoCorrections()
             case 45976: // Muru Portal Channel
             case 52124: // Sky Darkener Assault
             case 53096: // Quetz'lun's Judgment
+            case 70743: // AoD Special
+            case 70614: // AoD Special - Vegard
             case 52479: // Gift of the Harvester
             case 61588: // Blazing Harpoon
                 spellInfo->MaxAffectedTargets = 1;
@@ -3687,7 +3689,7 @@ void SpellMgr::LoadSpellInfoCorrections()
             case 45440: // Steam Tonk Controller
             case 60256: // Collect Sample
                 // Crashes client on pressing ESC
-                spellInfo->AttributesEx4 &= ~SPELL_ATTR4_TRIGGERED;
+                spellInfo->AttributesEx4 &= ~SPELL_ATTR4_CAN_CAST_WHILE_CASTING;
                 break;
             case 96942:  // Gaze of Occu'thar
             case 101009: // Gaze of Occu'thar

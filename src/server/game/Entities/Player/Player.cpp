@@ -1002,13 +1002,14 @@ bool Player::Create(ObjectGuid::LowType guidlow, WorldPackets::Character::Charac
 
     SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, uint32(-1));  // -1 is default value
 
-    SetUInt32Value(PLAYER_BYTES, (createInfo->Skin | (createInfo->Face << 8) | (createInfo->HairStyle << 16) | (createInfo->HairColor << 24)));
-    SetUInt32Value(PLAYER_BYTES_2, (createInfo->FacialHairStyle |
-                                   (0x00 << 8) |
-                                   (0x00 << 16) |
-                                   (((GetSession()->IsARecruiter() || GetSession()->GetRecruiterId() != 0) ? REST_STATE_RAF_LINKED : REST_STATE_NOT_RAF_LINKED) << 24)));
-    SetByteValue(PLAYER_BYTES_3, 0, createInfo->Sex);
-    SetByteValue(PLAYER_BYTES_3, 3, 0);                     // BattlefieldArenaFaction (0 or 1)
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID, createInfo->Skin);
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_FACE_ID, createInfo->Face);
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID, createInfo->HairStyle);
+    SetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID, createInfo->HairColor);
+    SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE, createInfo->FacialHairStyle);
+    SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_REST_STATE, (GetSession()->IsARecruiter() || GetSession()->GetRecruiterId() != 0) ? REST_STATE_RAF_LINKED : REST_STATE_NOT_RAF_LINKED);
+    SetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_GENDER, createInfo->Sex);
+    SetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_ARENA_FACTION, 0);
 
     SetGuidValue(OBJECT_FIELD_DATA, ObjectGuid::Empty);
     SetUInt32Value(PLAYER_GUILDRANK, 0);
@@ -1525,7 +1526,7 @@ void Player::SetDrunkValue(uint8 newDrunkValue, uint32 itemId /*= 0*/)
         m_invisibilityDetect.DelFlag(INVISIBILITY_DRUNK);
 
     uint32 newDrunkenState = Player::GetDrunkenstateByValue(newDrunkValue);
-    SetByteValue(PLAYER_BYTES_3, 1, newDrunkValue);
+    SetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_INEBRIATION, newDrunkValue);
     UpdateObjectVisibility();
 
     if (!isSobering)
@@ -2935,6 +2936,7 @@ void Player::GiveLevel(uint8 level)
     SetLevel(level);
 
     UpdateSkillsForLevel();
+    LearnSpecializationSpells();
 
     // save base values (bonuses already included in stored stats
     for (uint8 i = STAT_STRENGTH; i < MAX_STATS; ++i)
@@ -2985,8 +2987,8 @@ void Player::GiveLevel(uint8 level)
             {
                 ++m_grantableLevels;
 
-                if (!HasByteFlag(PLAYER_FIELD_BYTES, 1, 0x01))
-                    SetByteFlag(PLAYER_FIELD_BYTES, 1, 0x01);
+                if (!HasByteFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_RAF_GRANTABLE_LEVEL, 0x01))
+                    SetByteFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_RAF_GRANTABLE_LEVEL, 0x01);
             }
         }
     }
@@ -3046,6 +3048,7 @@ void Player::InitStatsForLevel(bool reapplyMods)
     SetUInt32Value(UNIT_FIELD_AURASTATE, 0);
 
     UpdateSkillsForLevel();
+    LearnSpecializationSpells();
 
     // set default cast time multiplier
     SetFloatValue(UNIT_MOD_CAST_SPEED, 1.0f);
@@ -3339,17 +3342,9 @@ bool Player::AddTalent(TalentEntry const* talent, uint8 spec, bool learning)
 
     PlayerTalentMap::iterator itr = GetTalentMap(spec)->find(talent->ID);
     if (itr != GetTalentMap(spec)->end())
-        itr->second->state = PLAYERSPELL_UNCHANGED;
+        itr->second = PLAYERSPELL_UNCHANGED;
     else
-    {
-        PlayerSpellState state = learning ? PLAYERSPELL_NEW : PLAYERSPELL_UNCHANGED;
-        PlayerTalent* newtalent = new PlayerTalent();
-
-        newtalent->state = state;
-        newtalent->spec = spec;
-
-        (*GetTalentMap(spec))[talent->ID] = newtalent;
-    }
+        (*GetTalentMap(spec))[talent->ID] = learning ? PLAYERSPELL_NEW : PLAYERSPELL_UNCHANGED;
 
     return true;
 }
@@ -3373,7 +3368,7 @@ void Player::RemoveTalent(TalentEntry const* talent)
     // if this talent rank can be found in the PlayerTalentMap, mark the talent as removed so it gets deleted
     PlayerTalentMap::iterator plrTalent = GetTalentMap(GetActiveTalentGroup())->find(talent->ID);
     if (plrTalent != GetTalentMap(GetActiveTalentGroup())->end())
-        plrTalent->second->state = PLAYERSPELL_REMOVED;
+        plrTalent->second = PLAYERSPELL_REMOVED;
 }
 
 bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent, bool disabled, bool loading /*= false*/, bool fromSkill /*= false*/)
@@ -3477,9 +3472,9 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
                     SendSupercededSpell(spellId, next_active_spell_id);
                 else
                 {
-                    WorldPackets::Spells::SendRemovedSpell removedSpells;
-                    removedSpells.Spells.push_back(spellId);
-                    GetSession()->SendPacket(removedSpells.Write());
+                    WorldPackets::Spells::UnlearnedSpells unlearnedSpells;
+                    unlearnedSpells.SpellID.push_back(spellId);
+                    SendDirectMessage(unlearnedSpells.Write());
                 }
             }
 
@@ -3920,9 +3915,9 @@ void Player::RemoveSpell(uint32 spell_id, bool disabled, bool learn_low_rank)
     // remove from spell book if not replaced by lesser rank
     if (!prev_activate)
     {
-        WorldPackets::Spells::SendRemovedSpell removedSpells;
-        removedSpells.Spells.push_back(spell_id);
-        GetSession()->SendPacket(removedSpells.Write());
+        WorldPackets::Spells::UnlearnedSpells unlearnedSpells;
+        unlearnedSpells.SpellID.push_back(spell_id);
+        SendDirectMessage(unlearnedSpells.Write());
     }
 }
 
@@ -4149,12 +4144,6 @@ bool Player::ResetTalents(bool noCost)
         RemoveTalent(talentInfo);
     }
 
-    // Remove spec specific spells
-    RemoveSpecializationSpells();
-
-    SetSpecId(GetActiveTalentGroup(), 0);
-    SetUInt32Value(PLAYER_FIELD_CURRENT_SPEC_ID, 0);
-
     SQLTransaction trans = CharacterDatabase.BeginTransaction();
     _SaveTalents(trans);
     _SaveSpells(trans);
@@ -4248,7 +4237,7 @@ bool Player::HasSpell(uint32 spell) const
 bool Player::HasTalent(uint32 talentId, uint8 group) const
 {
     PlayerTalentMap::const_iterator itr = GetTalentMap(group)->find(talentId);
-    return (itr != GetTalentMap(group)->end() && itr->second->state != PLAYERSPELL_REMOVED);
+    return (itr != GetTalentMap(group)->end() && itr->second != PLAYERSPELL_REMOVED);
 }
 
 bool Player::HasActiveSpell(uint32 spell) const
@@ -4878,7 +4867,7 @@ void Player::KillPlayer()
     //SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_IN_PVP);
 
     SetUInt32Value(OBJECT_DYNAMIC_FLAGS, UNIT_DYNFLAG_NONE);
-    ApplyModFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTE_RELEASE_TIMER, !sMapStore.LookupEntry(GetMapId())->Instanceable() && !HasAuraType(SPELL_AURA_PREVENT_RESURRECTION));
+    ApplyModFlag(PLAYER_FIELD_LOCAL_FLAGS, PLAYER_LOCAL_FLAG_RELEASE_TIMER, !sMapStore.LookupEntry(GetMapId())->Instanceable() && !HasAuraType(SPELL_AURA_PREVENT_RESURRECTION));
 
     // 6 minutes until repop at graveyard
     m_deathTimer = 6 * MINUTE * IN_MILLISECONDS;
@@ -4901,7 +4890,7 @@ void Player::CreateCorpse()
     // prevent existence 2 corpse for player
     SpawnCorpseBones();
 
-    uint32 _pb, _pb2, _cfb1, _cfb2;
+    uint32 _cfb1, _cfb2;
 
     Corpse* corpse = new Corpse((m_ExtraFlags & PLAYER_EXTRA_PVP_DEATH) ? CORPSE_RESURRECTABLE_PVP : CORPSE_RESURRECTABLE_PVE);
     SetPvPDeath(false);
@@ -4912,14 +4901,11 @@ void Player::CreateCorpse()
         return;
     }
 
-    _pb = GetUInt32Value(PLAYER_BYTES);
-    _pb2 = GetUInt32Value(PLAYER_BYTES_2);
-
-    uint8 skin       = (uint8)(_pb);
-    uint8 face       = (uint8)(_pb >> 8);
-    uint8 hairstyle  = (uint8)(_pb >> 16);
-    uint8 haircolor  = (uint8)(_pb >> 24);
-    uint8 facialhair = (uint8)(_pb2);
+    uint8 skin = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID);
+    uint8 face = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_FACE_ID);
+    uint8 hairstyle = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID);
+    uint8 haircolor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID);
+    uint8 facialhair = GetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE);
 
     _cfb1 = ((0x00) | (getRace() << 8) | (getGender() << 16) | (skin << 24));
     _cfb2 = ((face) | (hairstyle << 8) | (haircolor << 16) | (facialhair << 24));
@@ -6719,13 +6705,13 @@ void Player::UpdateHonorFields()
     {
         time_t yesterday = today - DAY;
 
-        uint16 kills_today = PAIR32_LOPART(GetUInt32Value(PLAYER_FIELD_KILLS));
-
         // update yesterday's contribution
         if (m_lastHonorUpdateTime >= yesterday)
         {
             // this is the first update today, reset today's contribution
-            SetUInt32Value(PLAYER_FIELD_KILLS, MAKE_PAIR32(0, kills_today));
+            uint16 killsToday = GetUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_TODAY_KILLS);
+            SetUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_TODAY_KILLS, 0);
+            SetUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_YESTERDAY_KILLS, killsToday);
         }
         else
         {
@@ -6814,7 +6800,7 @@ bool Player::RewardHonor(Unit* victim, uint32 groupsize, int32 honor, bool pvpto
             honor_f = std::ceil(Trinity::Honor::hk_honor_at_level_f(k_level) * (v_level - k_grey) / (k_level - k_grey));
 
             // count the number of playerkills in one day
-            ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
+            ApplyModUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_TODAY_KILLS, 1, true);
             // and those in a lifetime
             ApplyModUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, 1, true);
             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_EARN_HONORABLE_KILL);
@@ -7562,7 +7548,7 @@ void Player::CheckDuelDistance(time_t currTime)
         {
             duel->outOfBound = currTime;
 
-            WorldPacket data(SMSG_DUEL_OUTOFBOUNDS, 0);
+            WorldPacket data(SMSG_DUEL_OUT_OF_BOUNDS, 0);
             GetSession()->SendPacket(&data);
         }
     }
@@ -7572,7 +7558,7 @@ void Player::CheckDuelDistance(time_t currTime)
         {
             duel->outOfBound = 0;
 
-            WorldPacket data(SMSG_DUEL_INBOUNDS, 0);
+            WorldPacket data(SMSG_DUEL_IN_BOUNDS, 0);
             GetSession()->SendPacket(&data);
         }
         else if (currTime >= (duel->outOfBound+10))
@@ -16706,13 +16692,13 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
 
     SetUInt32Value(PLAYER_BYTES, fields[9].GetUInt32());
     SetUInt32Value(PLAYER_BYTES_2, fields[10].GetUInt32());
-    SetByteValue(PLAYER_BYTES_3, 0, fields[5].GetUInt8());
-    SetByteValue(PLAYER_BYTES_3, 1, fields[45].GetUInt8());
+    SetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_GENDER, gender);
+    SetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_INEBRIATION, fields[45].GetUInt8());
     SetUInt32Value(PLAYER_FLAGS, fields[11].GetUInt32());
     SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, fields[44].GetUInt32());
 
     // set which actionbars the client has active - DO NOT REMOVE EVER AGAIN (can be changed though, if it does change fieldwise)
-    SetByteValue(PLAYER_FIELD_BYTES, 2, fields[58].GetUInt8());
+    SetByteValue(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_ACTION_BAR_TOGGLES, fields[58].GetUInt8());
 
     InitDisplayIds();
 
@@ -16777,8 +16763,8 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
 
     _LoadCurrency(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_CURRENCY));
     SetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, fields[40].GetUInt32());
-    SetUInt16Value(PLAYER_FIELD_KILLS, 0, fields[41].GetUInt16());
-    SetUInt16Value(PLAYER_FIELD_KILLS, 1, fields[42].GetUInt16());
+    SetUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_TODAY_KILLS, fields[41].GetUInt16());
+    SetUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_YESTERDAY_KILLS, fields[42].GetUInt16());
 
     _LoadBoundInstances(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_BOUND_INSTANCES));
     _LoadInstanceTimeRestrictions(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_INSTANCE_LOCK_TIMES));
@@ -17296,7 +17282,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SQLQueryHolder *holder)
         SetFlag(OBJECT_DYNAMIC_FLAGS, UNIT_DYNFLAG_REFER_A_FRIEND);
 
     if (m_grantableLevels > 0)
-        SetByteValue(PLAYER_FIELD_BYTES, 1, 0x01);
+        SetByteValue(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_RAF_GRANTABLE_LEVEL, 0x01);
 
     _LoadDeclinedNames(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_DECLINED_NAMES));
 
@@ -17550,7 +17536,7 @@ void Player::LoadCorpse()
     else
     {
         if (Corpse* corpse = GetCorpse())
-            ApplyModFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTE_RELEASE_TIMER, corpse && !sMapStore.LookupEntry(corpse->GetMapId())->Instanceable());
+            ApplyModFlag(PLAYER_FIELD_LOCAL_FLAGS, PLAYER_LOCAL_FLAG_RELEASE_TIMER, corpse && !sMapStore.LookupEntry(corpse->GetMapId())->Instanceable());
         else
             //Prevent Dead Player login without corpse
             ResurrectPlayer(0.5f);
@@ -18875,8 +18861,8 @@ void Player::SaveToDB(bool create /*=false*/)
 
         stmt->setString(index++, ss.str());
         stmt->setUInt32(index++, GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS));
-        stmt->setUInt16(index++, GetUInt16Value(PLAYER_FIELD_KILLS, 0));
-        stmt->setUInt16(index++, GetUInt16Value(PLAYER_FIELD_KILLS, 1));
+        stmt->setUInt16(index++, GetUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_TODAY_KILLS));
+        stmt->setUInt16(index++, GetUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_YESTERDAY_KILLS));
         stmt->setUInt32(index++, GetUInt32Value(PLAYER_CHOSEN_TITLE));
         stmt->setUInt32(index++, GetUInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX));
         stmt->setUInt8(index++, GetDrunkValue());
@@ -18931,7 +18917,7 @@ void Player::SaveToDB(bool create /*=false*/)
             ss << GetUInt32Value(PLAYER__FIELD_KNOWN_TITLES + i) << ' ';
         stmt->setString(index++, ss.str());
 
-        stmt->setUInt8(index++, GetByteValue(PLAYER_FIELD_BYTES, 2));
+        stmt->setUInt8(index++, GetByteValue(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_ACTION_BAR_TOGGLES));
         stmt->setUInt32(index++, m_grantableLevels);
     }
     else
@@ -19012,8 +18998,8 @@ void Player::SaveToDB(bool create /*=false*/)
 
         stmt->setString(index++, ss.str());
         stmt->setUInt32(index++, GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS));
-        stmt->setUInt16(index++, GetUInt16Value(PLAYER_FIELD_KILLS, 0));
-        stmt->setUInt16(index++, GetUInt16Value(PLAYER_FIELD_KILLS, 1));
+        stmt->setUInt16(index++, GetUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_TODAY_KILLS));
+        stmt->setUInt16(index++, GetUInt16Value(PLAYER_FIELD_KILLS, PLAYER_FIELD_KILLS_OFFSET_YESTERDAY_KILLS));
         stmt->setUInt32(index++, GetUInt32Value(PLAYER_CHOSEN_TITLE));
         stmt->setUInt32(index++, GetUInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX));
         stmt->setUInt8(index++, GetDrunkValue());
@@ -19068,7 +19054,7 @@ void Player::SaveToDB(bool create /*=false*/)
             ss << GetUInt32Value(PLAYER__FIELD_KNOWN_TITLES + i) << ' ';
 
         stmt->setString(index++, ss.str());
-        stmt->setUInt8(index++, GetByteValue(PLAYER_FIELD_BYTES, 2));
+        stmt->setUInt8(index++, GetByteValue(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTES_OFFSET_ACTION_BAR_TOGGLES));
         stmt->setUInt32(index++, m_grantableLevels);
 
         stmt->setUInt8(index++, IsInWorld() && !GetSession()->PlayerLogout() ? 1 : 0);
@@ -20929,13 +20915,13 @@ void Player::SetRestBonus(float rest_bonus_new)
 
     // update data for client
     if ((GetsRecruitAFriendBonus(true) && (GetSession()->IsARecruiter() || GetSession()->GetRecruiterId() != 0)))
-        SetByteValue(PLAYER_BYTES_2, 3, REST_STATE_RAF_LINKED);
+        SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_REST_STATE, REST_STATE_RAF_LINKED);
     else
     {
         if (m_rest_bonus > 10)
-            SetByteValue(PLAYER_BYTES_2, 3, REST_STATE_RESTED);
+            SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_REST_STATE, REST_STATE_RESTED);
         else if (m_rest_bonus <= 1)
-            SetByteValue(PLAYER_BYTES_2, 3, REST_STATE_NOT_RAF_LINKED);
+            SetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_REST_STATE, REST_STATE_NOT_RAF_LINKED);
     }
 
     //RestTickUpdate
@@ -22301,7 +22287,7 @@ void Player::SetBattlegroundEntryPoint()
 void Player::SetBGTeam(uint32 team)
 {
     m_bgData.bgTeam = team;
-    SetByteValue(PLAYER_BYTES_3, 3, uint8(team == ALLIANCE ? 1 : 0));
+    SetByteValue(PLAYER_BYTES_3, PLAYER_BYTES_3_OFFSET_ARENA_FACTION, uint8(team == ALLIANCE ? 1 : 0));
 }
 
 uint32 Player::GetBGTeam() const
@@ -22928,7 +22914,7 @@ void Player::SendInitialPacketsAfterAddToMap()
 
     if (GetMap()->IsRaid())
     {
-        DifficultyEntry const* difficulty = sDifficultyStore.LookupEntry(GetMap()->GetDifficultyID());
+        DifficultyEntry const* difficulty = sDifficultyStore.AssertEntry(GetMap()->GetDifficultyID());
         SendRaidDifficulty((difficulty->Flags & DIFFICULTY_FLAG_LEGACY) != 0, GetMap()->GetDifficultyID());
     }
     else if (GetMap()->IsNonRaidDungeon())
@@ -24612,10 +24598,10 @@ uint32 Player::GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 n
     if (level >= sGtBarberShopCostBaseStore.GetTableRowCount())
         level = sGtBarberShopCostBaseStore.GetTableRowCount() - 1;
 
-    uint8 hairstyle = GetByteValue(PLAYER_BYTES, 2);
-    uint8 haircolor = GetByteValue(PLAYER_BYTES, 3);
-    uint8 facialhair = GetByteValue(PLAYER_BYTES_2, 0);
-    uint8 skincolor = GetByteValue(PLAYER_BYTES, 0);
+    uint8 hairstyle = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID);
+    uint8 haircolor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID);
+    uint8 facialhair = GetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE);
+    uint8 skincolor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID);
 
     if ((hairstyle == newhairstyle) && (haircolor == newhaircolor) && (facialhair == newfacialhair) && (!newSkin || (newSkin->Data == skincolor)))
         return 0;
@@ -25036,7 +25022,6 @@ void Player::StoreLootItem(uint8 lootSlot, Loot* loot)
         // LootItem is being removed (looted) from the container, delete it from the DB.
         if (!loot->containerID.IsEmpty())
             loot->DeleteLootItemFromContainerItemDB(item->itemid);
-
     }
     else
         SendEquipError(msg, NULL, NULL, item->itemid);
@@ -25542,7 +25527,7 @@ void Player::SendTalentsInfoData()
 
         for (PlayerTalentMap::const_iterator itr = GetTalentMap(i)->begin(); itr != GetTalentMap(i)->end(); ++itr)
         {
-            if (itr->second->state == PLAYERSPELL_REMOVED)
+            if (itr->second == PLAYERSPELL_REMOVED)
                 continue;
 
             TalentEntry const* talentInfo = sTalentStore.LookupEntry(itr->first);
@@ -25572,49 +25557,6 @@ void Player::SendTalentsInfoData()
     }
 
     SendDirectMessage(packet.Write());
-}
-
-void Player::BuildEnchantmentsInfoData(WorldPacket* data)
-{
-    uint32 slotUsedMask = 0;
-    size_t slotUsedMaskPos = data->wpos();
-    *data << uint32(slotUsedMask);                          // slotUsedMask < 0x80000
-
-    for (uint32 i = 0; i < EQUIPMENT_SLOT_END; ++i)
-    {
-        Item* item = GetItemByPos(INVENTORY_SLOT_BAG_0, i);
-
-        if (!item)
-            continue;
-
-        slotUsedMask |= (1 << i);
-
-        *data << uint32(item->GetEntry());                  // item entry
-
-        uint16 enchantmentMask = 0;
-        size_t enchantmentMaskPos = data->wpos();
-        *data << uint16(enchantmentMask);                   // enchantmentMask < 0x1000
-
-        for (uint32 j = 0; j < MAX_ENCHANTMENT_SLOT; ++j)
-        {
-            uint32 enchId = item->GetEnchantmentId(EnchantmentSlot(j));
-
-            if (!enchId)
-                continue;
-
-            enchantmentMask |= (1 << j);
-
-            *data << uint16(enchId);                        // enchantmentId?
-        }
-
-        data->put<uint16>(enchantmentMaskPos, enchantmentMask);
-
-        *data << uint16(0);                                 // unknown
-        *data << item->GetGuidValue(ITEM_FIELD_CREATOR).WriteAsPacked(); // item creator
-        *data << uint32(0);                                 // seed?
-    }
-
-    data->put<uint32>(slotUsedMaskPos, slotUsedMask);
 }
 
 void Player::SendEquipmentSetList()
@@ -25890,15 +25832,14 @@ void Player::_SaveTalents(SQLTransaction& trans)
     stmt->setUInt64(0, GetGUID().GetCounter());
     trans->Append(stmt);
 
-    PlayerTalentMap* talents;
+    PlayerTalentMap* talents = nullptr;
     for (uint8 group = 0; group < MAX_TALENT_GROUPS; ++group)
     {
         talents = GetTalentMap(group);
         for (PlayerTalentMap::iterator itr = talents->begin(); itr != talents->end();)
         {
-            if (itr->second->state == PLAYERSPELL_REMOVED)
+            if (itr->second == PLAYERSPELL_REMOVED)
             {
-                delete itr->second;
                 itr = talents->erase(itr);
                 continue;
             }
@@ -25906,7 +25847,7 @@ void Player::_SaveTalents(SQLTransaction& trans)
             stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CHAR_TALENT);
             stmt->setUInt64(0, GetGUID().GetCounter());
             stmt->setUInt32(1, itr->first);
-            stmt->setUInt8(2, itr->second->spec);
+            stmt->setUInt8(2, group);
             trans->Append(stmt);
             ++itr;
         }
@@ -27215,25 +27156,29 @@ Difficulty Player::CheckLoadedLegacyRaidDifficultyID(Difficulty difficulty)
 
 SpellInfo const* Player::GetCastSpellInfo(SpellInfo const* spellInfo) const
 {
-    auto range = m_overrideSpells.equal_range(spellInfo->Id);
-    for (auto itr = range.first; itr != range.second; ++itr)
-        if (SpellInfo const* newInfo = sSpellMgr->GetSpellInfo(itr->second))
-            return Unit::GetCastSpellInfo(newInfo);
+    auto overrides = m_overrideSpells.find(spellInfo->Id);
+    if (overrides != m_overrideSpells.end())
+        for (uint32 spellId : overrides->second)
+            if (SpellInfo const* newInfo = sSpellMgr->GetSpellInfo(spellId))
+                return Unit::GetCastSpellInfo(newInfo);
 
     return Unit::GetCastSpellInfo(spellInfo);
 }
 
+void Player::AddOverrideSpell(uint32 overridenSpellId, uint32 newSpellId)
+{
+    m_overrideSpells[overridenSpellId].insert(newSpellId);
+}
+
 void Player::RemoveOverrideSpell(uint32 overridenSpellId, uint32 newSpellId)
 {
-    auto range = m_overrideSpells.equal_range(overridenSpellId);
-    for (auto itr = range.first; itr != range.second; ++itr)
-    {
-        if (itr->second == newSpellId)
-        {
-            m_overrideSpells.erase(itr);
-            break;
-        }
-    }
+    auto overrides = m_overrideSpells.find(overridenSpellId);
+    if (overrides == m_overrideSpells.end())
+        return;
+
+    overrides->second.erase(newSpellId);
+    if (overrides->second.empty())
+        m_overrideSpells.erase(overrides);
 }
 
 void Player::LearnSpecializationSpells()
@@ -27243,6 +27188,10 @@ void Player::LearnSpecializationSpells()
         for (size_t j = 0; j < specSpells->size(); ++j)
         {
             SpecializationSpellsEntry const* specSpell = specSpells->at(j);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(specSpell->SpellID);
+            if (!spellInfo || spellInfo->SpellLevel > getLevel())
+                continue;
+
             LearnSpell(specSpell->SpellID, false);
             if (specSpell->OverridesSpellID)
                 AddOverrideSpell(specSpell->OverridesSpellID, specSpell->SpellID);

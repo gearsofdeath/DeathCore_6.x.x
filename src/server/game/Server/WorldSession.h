@@ -112,6 +112,7 @@ namespace WorldPackets
         class LogoutRequest;
         class LogoutCancel;
         class LoadingScreenNotify;
+        class SetActionBarToggles;
     }
 
     namespace ClientConfig
@@ -167,13 +168,21 @@ namespace WorldPackets
         class QueryGuildInfo;
     }
 
+    namespace Inspect
+    {
+        class Inspect;
+        class InspectPVPRequest;
+        class QueryInspectAchievements;
+        class RequestHonorStats;
+    }
+
     namespace Item
     {
         class AutoEquipItem;
         class AutoStoreBagItem;
         class BuyBackItem;
         class DestroyItem;
-        class ItemRefundInfo;
+        class GetItemPurchaseData;
         class RepairItem;
         class SellItem;
         class SplitItem;
@@ -258,9 +267,23 @@ namespace WorldPackets
         class LearnTalents;
     }
 
+    namespace Ticket
+    {
+        class GMTicketGetSystemStatus;
+        class GMTicketGetCaseStatus;
+        class GMTicketGetTicket;
+        class GMTicketAcknowledgeSurvey;
+    }
+
     namespace Trade
     {
         class CancelTrade;
+    }
+
+    namespace Who
+    {
+        class WhoIsRequest;
+        class WhoRequestPkt;
     }
 }
 
@@ -501,6 +524,7 @@ class WorldSession
         void SendAuthWaitQue(uint32 position);
 
         void SendSetTimeZoneInformation();
+        void SendFeatureSystemStatus();
         void SendFeatureSystemStatusGlueScreen();
 
         void SendNameQueryOpcode(ObjectGuid guid);
@@ -685,11 +709,11 @@ class WorldSession
         void HandlePortGraveyard(WorldPackets::Misc::PortGraveyard& packet);
         void HandleRequestCemeteryList(WorldPackets::Misc::RequestCemeteryList& packet);
 
-        // new inspect
-        void HandleInspectOpcode(WorldPacket& recvPacket);
-
-        // new party stats
-        void HandleInspectHonorStatsOpcode(WorldPacket& recvPacket);
+        // Inspect
+        void HandleInspectOpcode(WorldPackets::Inspect::Inspect& inspect);
+        void HandleRequestHonorStatsOpcode(WorldPackets::Inspect::RequestHonorStats& request);
+        void HandleInspectPVP(WorldPackets::Inspect::InspectPVPRequest& request);
+        void HandleQueryInspectAchievements(WorldPackets::Inspect::QueryInspectAchievements& inspect);
 
         void HandleMoveWaterWalkAck(WorldPacket& recvPacket);
         void HandleFeatherFallAck(WorldPacket& recvData);
@@ -719,7 +743,7 @@ class WorldSession
         void HandleLootOpcode(WorldPackets::Loot::LootUnit& packet);
         void HandleLootReleaseOpcode(WorldPackets::Loot::LootRelease& packet);
         void HandleLootMasterGiveOpcode(WorldPacket& recvPacket);
-        void HandleWhoOpcode(WorldPacket& recvPacket);
+        void HandleWhoOpcode(WorldPackets::Who::WhoRequestPkt& whoRequest);
         void HandleLogoutRequestOpcode(WorldPackets::Character::LogoutRequest& logoutRequest);
         void HandleLogoutCancelOpcode(WorldPackets::Character::LogoutCancel& logoutCancel);
 
@@ -727,8 +751,9 @@ class WorldSession
         void HandleGMTicketCreateOpcode(WorldPacket& recvPacket);
         void HandleGMTicketUpdateOpcode(WorldPacket& recvPacket);
         void HandleGMTicketDeleteOpcode(WorldPacket& recvPacket);
-        void HandleGMTicketGetTicketOpcode(WorldPacket& recvPacket);
-        void HandleGMTicketSystemStatusOpcode(WorldPacket& recvPacket);
+        void HandleGMTicketGetCaseStatusOpcode(WorldPackets::Ticket::GMTicketGetCaseStatus& packet);
+        void HandleGMTicketGetTicketOpcode(WorldPackets::Ticket::GMTicketGetTicket& packet);
+        void HandleGMTicketSystemStatusOpcode(WorldPackets::Ticket::GMTicketGetSystemStatus& packet);
         void HandleGMSurveySubmit(WorldPacket& recvPacket);
         void HandleReportLag(WorldPacket& recvPacket);
         void HandleGMResponseResolve(WorldPacket& recvPacket);
@@ -1034,7 +1059,7 @@ class WorldSession
         void HandlePetCastSpellOpcode(WorldPackets::Spells::PetCastSpell& castRequest);
         void HandlePetLearnTalent(WorldPacket& recvPacket);
 
-        void HandleSetActionBarToggles(WorldPacket& recvData);
+        void HandleSetActionBarToggles(WorldPackets::Character::SetActionBarToggles& packet);
 
         void HandleTotemDestroyed(WorldPacket& recvData);
         void HandleDismissCritter(WorldPacket& recvData);
@@ -1049,7 +1074,7 @@ class WorldSession
         void HandleBattlefieldLeaveOpcode(WorldPacket& recvData);
         void HandleBattlemasterJoinArena(WorldPacket& recvData);
         void HandleReportPvPAFK(WorldPacket& recvData);
-        void HandleRequestRatedBgInfo(WorldPacket& recvData);
+        void HandleRequestRatedBattlefieldInfo(WorldPacket& recvData);
         void HandleRequestPvpOptions(WorldPacket& recvData);
         void HandleRequestPvpReward(WorldPacket& recvData);
         void HandleRequestRatedBgStats(WorldPacket& recvData);
@@ -1075,7 +1100,7 @@ class WorldSession
         void HandleSetTitleOpcode(WorldPacket& recvData);
         void HandleRealmSplitOpcode(WorldPacket& recvData);
         void HandleTimeSyncResponse(WorldPackets::Misc::TimeSyncResponse& packet);
-        void HandleWhoisOpcode(WorldPacket& recvData);
+        void HandleWhoisOpcode(WorldPackets::Who::WhoIsRequest& packet);
         void HandleResetInstancesOpcode(WorldPacket& recvData);
         void HandleHearthAndResurrect(WorldPacket& recvData);
         void HandleInstanceLockResponse(WorldPacket& recvPacket);
@@ -1133,7 +1158,7 @@ class WorldSession
 
         void HandleCancelTempEnchantmentOpcode(WorldPacket& recvData);
 
-        void HandleItemRefundInfoRequest(WorldPackets::Item::ItemRefundInfo& packet);
+        void HandleGetItemPurchaseData(WorldPackets::Item::GetItemPurchaseData& packet);
         void HandleItemRefund(WorldPacket& recvData);
 
         void HandleSetTaxiBenchmarkOpcode(WorldPacket& recvData);
@@ -1194,7 +1219,6 @@ class WorldSession
         void HandleSpellClick(WorldPacket& recvData);
         void HandleMirrorImageDataRequest(WorldPacket& recvData);
         void HandleRemoveGlyph(WorldPacket& recvData);
-        void HandleQueryInspectAchievements(WorldPacket& recvData);
         void HandleGuildSetFocusedAchievement(WorldPackets::Achievement::GuildSetFocusedAchievement& setFocusedAchievement);
         void HandleEquipmentSetSave(WorldPackets::EquipmentSet::SaveEquipmentSet& packet);
         void HandleEquipmentSetDelete(WorldPacket& recvData);

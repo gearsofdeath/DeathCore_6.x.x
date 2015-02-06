@@ -1193,6 +1193,15 @@ void Object::ApplyModInt32Value(uint16 index, int32 val, bool apply)
     SetInt32Value(index, cur);
 }
 
+void Object::ApplyModUInt16Value(uint16 index, uint8 offset, int16 val, bool apply)
+{
+    int16 cur = GetUInt16Value(index, offset);
+    cur += (apply ? val : -val);
+    if (cur < 0)
+        cur = 0;
+    SetUInt16Value(index, offset, cur);
+}
+
 void Object::ApplyModSignedFloatValue(uint16 index, float  val, bool apply)
 {
     float cur = GetFloatValue(index);
@@ -1392,7 +1401,7 @@ void Object::AddDynamicValue(uint16 index, uint32 value)
     if (mask.GetCount() < values.size())
         mask.AddBlock();
 
-    mask.SetBit(values.size());
+    mask.SetBit(values.size() - 1);
 
     if (m_inWorld && !m_objectUpdated)
     {

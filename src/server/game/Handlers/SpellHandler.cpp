@@ -563,7 +563,6 @@ void WorldSession::HandleSpellClick(WorldPacket& recvData)
 
 void WorldSession::HandleMirrorImageDataRequest(WorldPacket& recvData)
 {
-    TC_LOG_DEBUG("network", "WORLD: CMSG_GET_MIRRORIMAGE_DATA");
     ObjectGuid guid;
     recvData >> guid;
     recvData.read_skip<uint32>(); // DisplayId ?
@@ -581,7 +580,7 @@ void WorldSession::HandleMirrorImageDataRequest(WorldPacket& recvData)
     if (!creator)
         return;
 
-    WorldPacket data(SMSG_MIRRORIMAGE_DATA, 68);
+    WorldPacket data(SMSG_MIRROR_IMAGE_COMPONENTED_DATA, 68);
     data << guid;
     data << uint32(creator->GetDisplayId());
     data << uint8(creator->getRace());
@@ -596,11 +595,11 @@ void WorldSession::HandleMirrorImageDataRequest(WorldPacket& recvData)
         if (ObjectGuid::LowType guildId = player->GetGuildId())
             guild = sGuildMgr->GetGuildById(guildId);
 
-        data << uint8(player->GetByteValue(PLAYER_BYTES, 0));   // skin
-        data << uint8(player->GetByteValue(PLAYER_BYTES, 1));   // face
-        data << uint8(player->GetByteValue(PLAYER_BYTES, 2));   // hair
-        data << uint8(player->GetByteValue(PLAYER_BYTES, 3));   // haircolor
-        data << uint8(player->GetByteValue(PLAYER_BYTES_2, 0)); // facialhair
+        data << uint8(player->GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID));
+        data << uint8(player->GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_FACE_ID));
+        data << uint8(player->GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_STYLE_ID));
+        data << uint8(player->GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID));
+        data << uint8(player->GetByteValue(PLAYER_BYTES_2, PLAYER_BYTES_2_OFFSET_FACIAL_STYLE));
         data << (guild ? guild->GetGUID() : ObjectGuid::Empty);
 
         static EquipmentSlots const itemSlots[] =

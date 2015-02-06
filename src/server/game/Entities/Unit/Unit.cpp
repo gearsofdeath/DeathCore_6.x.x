@@ -2399,11 +2399,9 @@ SpellMissInfo Unit::MagicSpellHitResult(Unit* victim, SpellInfo const* spellInfo
     int32 leveldif = int32(victim->getLevelForTarget(this)) - thisLevel;
 
     // Base hit chance from attacker and victim levels
-    int32 modHitChance;
-    if (leveldif < 3)
-        modHitChance = 96 - leveldif;
-    else
-        modHitChance = 94 - (leveldif - 2) * lchance;
+    int32 modHitChance = 100;
+    if (leveldif > 3)
+        modHitChance -= (leveldif - 3) * lchance;
 
     // Spellmod from SPELLMOD_RESIST_MISS_CHANCE
     if (Player* modOwner = GetSpellModOwner())
@@ -4842,7 +4840,7 @@ void Unit::SendSpellMiss(Unit* target, uint32 spellID, SpellMissInfo missInfo)
 
 void Unit::SendSpellDamageResist(Unit* target, uint32 spellId)
 {
-    WorldPacket data(SMSG_PROCRESIST, 8+8+4+1);
+    WorldPacket data(SMSG_PROC_RESIST, 8+8+4+1);
     data << GetGUID();
     data << target->GetGUID();
     data << uint32(spellId);
@@ -10433,20 +10431,20 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
         WorldPackets::Movement::MoveSetSpeed selfpacket(moveTypeToOpcode[mtype][1]);
         selfpacket.MoverGUID = GetGUID();
         selfpacket.SequenceIndex = m_movementCounter++;
-        selfpacket.Speed = rate;
+        selfpacket.Speed = GetSpeed(mtype);
         ToPlayer()->GetSession()->SendPacket(selfpacket.Write());
 
         // Send notification to other players
         WorldPackets::Movement::MoveUpdateSpeed packet(moveTypeToOpcode[mtype][2]);
         packet.movementInfo = &m_movementInfo;
-        packet.Speed = rate;
+        packet.Speed = GetSpeed(mtype);
         SendMessageToSet(packet.Write(), false);
     }
     else
     {
         WorldPackets::Movement::MoveSplineSetSpeed packet(moveTypeToOpcode[mtype][0]);
         packet.MoverGUID = GetGUID();
-        packet.Speed = rate;
+        packet.Speed = GetSpeed(mtype);
         SendMessageToSet(packet.Write(), true);
     }
 }
@@ -14578,7 +14576,7 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                 // Based on Hair color
                 if (getRace() == RACE_NIGHTELF)
                 {
-                    uint8 hairColor = GetByteValue(PLAYER_BYTES, 3);
+                    uint8 hairColor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID);
                     switch (hairColor)
                     {
                         case 7: // Violet
@@ -14598,7 +14596,7 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                 }
                 else if (getRace() == RACE_TROLL)
                 {
-                    uint8 hairColor = GetByteValue(PLAYER_BYTES, 3);
+                    uint8 hairColor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID);
                     switch (hairColor)
                     {
                         case 0: // Red
@@ -14621,7 +14619,7 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                 else if (getRace() == RACE_WORGEN)
                 {
                     // Based on Skin color
-                    uint8 skinColor = GetByteValue(PLAYER_BYTES, 0);
+                    uint8 skinColor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID);
                     // Male
                     if (getGender() == GENDER_MALE)
                     {
@@ -14665,7 +14663,7 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                 // Based on Skin color
                 else if (getRace() == RACE_TAUREN)
                 {
-                    uint8 skinColor = GetByteValue(PLAYER_BYTES, 0);
+                    uint8 skinColor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID);
                     // Male
                     if (getGender() == GENDER_MALE)
                     {
@@ -14726,7 +14724,7 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                 // Based on Hair color
                 if (getRace() == RACE_NIGHTELF)
                 {
-                    uint8 hairColor = GetByteValue(PLAYER_BYTES, 3);
+                    uint8 hairColor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID);
                     switch (hairColor)
                     {
                         case 0: // Green
@@ -14745,7 +14743,7 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                 }
                 else if (getRace() == RACE_TROLL)
                 {
-                    uint8 hairColor = GetByteValue(PLAYER_BYTES, 3);
+                    uint8 hairColor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_HAIR_COLOR_ID);
                     switch (hairColor)
                     {
                         case 0: // Red
@@ -14769,7 +14767,7 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                 else if (getRace() == RACE_WORGEN)
                 {
                     // Based on Skin color
-                    uint8 skinColor = GetByteValue(PLAYER_BYTES, 0);
+                    uint8 skinColor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID);
                     // Male
                     if (getGender() == GENDER_MALE)
                     {
@@ -14813,7 +14811,7 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form) const
                 // Based on Skin color
                 else if (getRace() == RACE_TAUREN)
                 {
-                    uint8 skinColor = GetByteValue(PLAYER_BYTES, 0);
+                    uint8 skinColor = GetByteValue(PLAYER_BYTES, PLAYER_BYTES_OFFSET_SKIN_ID);
                     // Male
                     if (getGender() == GENDER_MALE)
                     {
