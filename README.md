@@ -17,7 +17,6 @@ Patch 6.x.x - NDP-DB 6.x.x (Alpha)
 
 Esta é a nova source da DeathCore que estamos atualizando devagar, adicionando novos scripts e novidades, e se você quiser nos ajudar neste projeto, ficaremos gratos! Toda a ajuda será bem vinda! Atenciosamente, Equipe Noffearr Death ProjecT™.
 
-# Links:
 
 ##Arquivos Necessários
 
@@ -101,6 +100,5 @@ Leia o arquivo [COPYING](COPYING)
 Leia o arquivo [THANKS](THANKS)
 
 
-## Links
 
 [Forums](http://www.noffearrdeathproject.net)
