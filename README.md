@@ -17,9 +17,9 @@ Patch 6.x.x - NDP-DB 6.x.x (Alpha)
 
 Esta é a nova source da DeathCore que estamos atualizando devagar, adicionando novos scripts e novidades, e se você quiser nos ajudar neste projeto, ficaremos gratos! Toda a ajuda será bem vinda! Atenciosamente, Equipe Noffearr Death ProjecT™.
 
-##Links:
+# Links:
 
-#Arquivos Necessários
+##Arquivos Necessários
 
 [dbc](https://mega.co.nz/#!G8NSTRjR!3fBjtQLLXqDfYOAL9ig-BZYGcex85f-3KLopKiXS6D8)
 
@@ -29,7 +29,7 @@ Esta é a nova source da DeathCore que estamos atualizando devagar, adicionando 
 
 [vmaps](https://mega.co.nz/#!2kkAlLCT!V8RASugmPA-Cz2PAlU2-rXgNBFyTcnIPjQgshyQTtsY)
 
-#Warlords Of Draenor - Client
+##Warlords Of Draenor - Client
  
 [DeathCore Client] (hhttps://mega.co.nz/#!jpkwSaDL!kWLNfzAnfipfNeYowaB1ECNzAq3ylnpFzgfi9tpioGE)
 Observações:
@@ -37,7 +37,7 @@ Observações:
 
 [Cliente Completo - World of Warcraft: Warlords of Draenor - Build 19342] (https://mega.co.nz/#!yw9gHaKI!7jznvt4b4A_c0LYxkZMk-ECaJayya4zYfLj081NEpPQ)
 
-#Databases
+##Databases
 
 [Todas as Databases - NDP-DB 6.x.x (Alpha)](https://mega.co.nz/#!vk0wmZCS!4smlLvx02ZmLbje9sK7YJaoM6LzS9bZlyCP_RYtIXNo)
 
@@ -49,7 +49,7 @@ Se caso já tenha o cliente e não deseja baixar os arquivos dbc, maps, mmaps e 
 
 
 
-# ![logo](http://i.imgur.com/Ues1gtC.png)
+## ![logo](http://i.imgur.com/Ues1gtC.png)
 
 
 ## Introdução
