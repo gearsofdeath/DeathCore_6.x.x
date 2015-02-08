@@ -30,12 +30,11 @@ Esta é a nova source da DeathCore que estamos atualizando devagar, adicionando 
 
 ##Warlords Of Draenor - Client
  
-[DeathCore Client](hhttps://mega.co.nz/#!jpkwSaDL!kWLNfzAnfipfNeYowaB1ECNzAq3ylnpFzgfi9tpioGE)
+[DeathCore Client](https://mega.co.nz/#!jpkwSaDL!kWLNfzAnfipfNeYowaB1ECNzAq3ylnpFzgfi9tpioGE)
+Observações:
+- O DeathCore Client será usado apenas para quem tem o cliente de qualquer versão anterior completa, basta extrai-lo na pasta do mesmo.
 
 [Cliente Completo - World of Warcraft: Warlords of Draenor - Build 19342](https://mega.co.nz/#!yw9gHaKI!7jznvt4b4A_c0LYxkZMk-ECaJayya4zYfLj081NEpPQ)
-
-#Observações:
-- O DeathCore Client será usado apenas para quem tem o cliente de qualquer versão anterior completa, basta extrai-lo na pasta do mesmo.
 
 ##Databases
 
