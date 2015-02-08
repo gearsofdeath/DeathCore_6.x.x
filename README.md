@@ -31,6 +31,7 @@ Esta é a nova source da DeathCore que estamos atualizando devagar, adicionando 
 ##Warlords Of Draenor - Client
  
 [DeathCore Client](https://mega.co.nz/#!jpkwSaDL!kWLNfzAnfipfNeYowaB1ECNzAq3ylnpFzgfi9tpioGE)
+
 Observações:
 - O DeathCore Client será usado apenas para quem tem o cliente de qualquer versão anterior completa, basta extrai-lo na pasta do mesmo.
 
