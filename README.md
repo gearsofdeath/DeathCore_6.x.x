@@ -48,7 +48,7 @@ Se caso já tenha o cliente e não deseja baixar os arquivos dbc, maps, mmaps e 
 
 [Ferramentas (Extractores/Connection_Patch] (https://mega.co.nz/#!ekU2FaJb!dxmKQ1Bfl2sX7j9IPRrZ9C9UysxQiPlqWstzcJP9mRc)
 
-
+=====================
 
 ## ![logo](http://i.imgur.com/Ues1gtC.png)
 
