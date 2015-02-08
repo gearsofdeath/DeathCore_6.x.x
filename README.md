@@ -2,7 +2,6 @@
 
 
 # DeathCore 6.x.x - New Source - Scripts
-=====================
 
 ##Informações Gerais do Projeto
 
