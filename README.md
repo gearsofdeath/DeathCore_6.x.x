@@ -1,10 +1,10 @@
-# ![logo](http://i.imgur.com/QBNaZYj.png)
+## ![logo](http://i.imgur.com/QBNaZYj.png)
 
 
-## DeathCore 6.x.x - New Source - Scripts
+# DeathCore 6.x.x - New Source - Scripts
 =====================
 
-#Informações Gerais do Projeto
+##Informações Gerais do Projeto
 
 Patch 6.x.x - NDP-DB 6.x.x (Alpha)
 
@@ -17,8 +17,9 @@ Patch 6.x.x - NDP-DB 6.x.x (Alpha)
 
 Esta é a nova source da DeathCore que estamos atualizando devagar, adicionando novos scripts e novidades, e se você quiser nos ajudar neste projeto, ficaremos gratos! Toda a ajuda será bem vinda! Atenciosamente, Equipe Noffearr Death ProjecT™.
 
-Links para fazer download:
+##Links:
 
+#Arquivos Necessários
 
 [dbc](https://mega.co.nz/#!G8NSTRjR!3fBjtQLLXqDfYOAL9ig-BZYGcex85f-3KLopKiXS6D8)
 
@@ -28,7 +29,15 @@ Links para fazer download:
 
 [vmaps](https://mega.co.nz/#!2kkAlLCT!V8RASugmPA-Cz2PAlU2-rXgNBFyTcnIPjQgshyQTtsY)
 
-[Cliente - World of Warcraft: Warlords of Draenor - Build 19342] (https://mega.co.nz/#!yw9gHaKI!7jznvt4b4A_c0LYxkZMk-ECaJayya4zYfLj081NEpPQ)
+#Warlords Of Draenor - Client
+ 
+[DeathCore Client] (hhttps://mega.co.nz/#!jpkwSaDL!kWLNfzAnfipfNeYowaB1ECNzAq3ylnpFzgfi9tpioGE)
+Observações:
+- Esse cliente será usado apenas para quem tem o cliente de qualquer versão anterior completa, basta extrai-lo na pasta do mesmo.
+
+[Cliente Completo - World of Warcraft: Warlords of Draenor - Build 19342] (https://mega.co.nz/#!yw9gHaKI!7jznvt4b4A_c0LYxkZMk-ECaJayya4zYfLj081NEpPQ)
+
+#Databases
 
 [Todas as Databases - NDP-DB 6.x.x (Alpha)](https://mega.co.nz/#!vk0wmZCS!4smlLvx02ZmLbje9sK7YJaoM6LzS9bZlyCP_RYtIXNo)
 
