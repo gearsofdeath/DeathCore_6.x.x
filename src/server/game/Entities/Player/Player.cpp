@@ -56,6 +56,7 @@
 #include "LFGMgr.h"
 #include "Language.h"
 #include "Log.h"
+#include "MailPackets.h"
 #include "MapInstanced.h"
 #include "MapManager.h"
 #include "MovementStructures.h"
@@ -3236,26 +3237,36 @@ void Player::RemoveMail(uint32 id)
 
 void Player::SendMailResult(uint32 mailId, MailResponseType mailAction, MailResponseResult mailError, uint32 equipError, ObjectGuid::LowType item_guid, uint32 item_count)
 {
-    WorldPacket data(SMSG_SEND_MAIL_RESULT, (4+4+4+(mailError == MAIL_ERR_EQUIP_ERROR?4:(mailAction == MAIL_ITEM_TAKEN?4+4:0))));
-    data << uint32(mailId);
-    data << uint32(mailAction);
-    data << uint32(mailError);
-    if (mailError == MAIL_ERR_EQUIP_ERROR)
-        data << uint32(equipError);
-    else if (mailAction == MAIL_ITEM_TAKEN)
+
+    WorldPackets::Mail::MailCommandResult result;
+
+    result.MailID = mailId;
+    result.Command = mailAction;
+    result.ErrorCode = mailError;
+
+    switch (mailError)
     {
-        data << uint64(item_guid);                         // item guid low?
-        data << uint32(item_count);                        // item count?
+        case MAIL_ERR_EQUIP_ERROR:
+            result.BagResult = equipError;
+            break;
+        case MAIL_ITEM_TAKEN:
+            result.AttachID = item_guid;
+            result.QtyInInventory = item_count;
+            break;
+        default:
+            break;
     }
-    GetSession()->SendPacket(&data);
+
+    GetSession()->SendPacket(result.Write());
 }
 
 void Player::SendNewMail()
 {
     // deliver undelivered mail
-    WorldPacket data(SMSG_RECEIVED_MAIL, 4);
-    data << (uint32) 0;
-    GetSession()->SendPacket(&data);
+    WorldPackets::Mail::NotifyRecievedMail notify;
+    notify.Delay = 0.0f;
+
+    GetSession()->SendPacket(notify.Write());
 }
 
 void Player::UpdateNextMailTimeAndUnreads()
@@ -3647,13 +3658,16 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
 
     for (SpellLearnSpellMap::const_iterator itr2 = spell_bounds.first; itr2 != spell_bounds.second; ++itr2)
     {
-        if (!itr2->second.autoLearned)
+        if (!itr2->second.AutoLearned)
         {
-            if (!IsInWorld() || !itr2->second.active)       // at spells loading, no output, but allow save
-                AddSpell(itr2->second.spell, itr2->second.active, true, true, false);
+            if (!IsInWorld() || !itr2->second.Active)       // at spells loading, no output, but allow save
+                AddSpell(itr2->second.Spell, itr2->second.Active, true, true, false);
             else                                            // at normal learning
-                LearnSpell(itr2->second.spell, true);
+                LearnSpell(itr2->second.Spell, true);
         }
+
+        if (itr2->second.OverridesSpell && itr2->second.Active)
+            AddOverrideSpell(itr2->second.OverridesSpell, itr2->second.Spell);
     }
 
     if (!GetSession()->PlayerLoading())
@@ -3771,7 +3785,7 @@ void Player::RemoveSpell(uint32 spell_id, bool disabled, bool learn_low_rank)
     // unlearn non talent higher ranks (recursive)
     if (uint32 nextSpell = sSpellMgr->GetNextSpellInChain(spell_id))
     {
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(nextSpell);
+        SpellInfo const* spellInfo = sSpellMgr->AssertSpellInfo(nextSpell);
         if (HasSpell(nextSpell) && !spellInfo->HasAttribute(SPELL_ATTR0_CU_IS_TALENT))
             RemoveSpell(nextSpell, disabled, false);
     }
@@ -3862,7 +3876,11 @@ void Player::RemoveSpell(uint32 spell_id, bool disabled, bool learn_low_rank)
     SpellLearnSpellMapBounds spell_bounds = sSpellMgr->GetSpellLearnSpellMapBounds(spell_id);
 
     for (SpellLearnSpellMap::const_iterator itr2 = spell_bounds.first; itr2 != spell_bounds.second; ++itr2)
-        RemoveSpell(itr2->second.spell, disabled);
+    {
+        RemoveSpell(itr2->second.Spell, disabled);
+        if (itr2->second.OverridesSpell)
+            RemoveOverrideSpell(itr2->second.OverridesSpell, itr2->second.Spell);
+    }
 
     // activate lesser rank in spellbook/action bar, and cast it if need
     bool prev_activate = false;
@@ -4432,27 +4450,27 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
                             do
                             {
                                 Field* itemFields = resultItems->Fetch();
-                                ObjectGuid::LowType item_guidlow = itemFields[15].GetUInt64();
-                                uint32 item_template = itemFields[16].GetUInt32();
+                                ObjectGuid::LowType itemGuidLow = itemFields[0].GetUInt64();
+                                uint32 itemEntry = itemFields[1].GetUInt32();
 
-                                ItemTemplate const* itemProto = sObjectMgr->GetItemTemplate(item_template);
+                                ItemTemplate const* itemProto = sObjectMgr->GetItemTemplate(itemEntry);
                                 if (!itemProto)
                                 {
                                     stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_ITEM_INSTANCE);
-                                    stmt->setUInt64(0, item_guidlow);
+                                    stmt->setUInt64(0, itemGuidLow);
                                     trans->Append(stmt);
                                     continue;
                                 }
 
-                                Item* pItem = NewItemOrBag(itemProto);
-                                if (!pItem->LoadFromDB(item_guidlow, playerguid, itemFields, item_template))
+                                Item* item = NewItemOrBag(itemProto);
+                                if (!item->LoadFromDB(itemGuidLow, playerguid, itemFields, itemEntry))
                                 {
-                                    pItem->FSetState(ITEM_REMOVED);
-                                    pItem->SaveToDB(trans);              // it also deletes item object!
+                                    item->FSetState(ITEM_REMOVED);
+                                    item->SaveToDB(trans);              // it also deletes item object!
                                     continue;
                                 }
 
-                                draft.AddItem(pItem);
+                                draft.AddItem(item);
                             }
                             while (resultItems->NextRow());
                         }
@@ -4487,16 +4505,15 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             // Delete char from social list of online chars
             stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHAR_SOCIAL);
             stmt->setUInt64(0, guid);
-            PreparedQueryResult resultFriends = CharacterDatabase.Query(stmt);
 
-            if (resultFriends)
+            if (PreparedQueryResult resultFriends = CharacterDatabase.Query(stmt))
             {
                 do
                 {
-                    if (Player* pFriend = ObjectAccessor::FindPlayer(ObjectGuid::Create<HighGuid::Player>((*resultFriends)[0].GetUInt64())))
+                    if (Player* playerFriend = ObjectAccessor::FindPlayer(ObjectGuid::Create<HighGuid::Player>((*resultFriends)[0].GetUInt64())))
                     {
-                        pFriend->GetSocial()->RemoveFromSocialList(playerguid, false);
-                        sSocialMgr->SendFriendStatus(pFriend, FRIEND_REMOVED, playerguid, false);
+                        playerFriend->GetSocial()->RemoveFromSocialList(playerguid, SOCIAL_FLAG_ALL);
+                        sSocialMgr->SendFriendStatus(playerFriend, FRIEND_REMOVED, playerguid);
                     }
                 } while (resultFriends->NextRow());
             }
@@ -17545,8 +17562,8 @@ void Player::LoadCorpse()
 
 void Player::_LoadInventory(PreparedQueryResult result, uint32 timeDiff)
 {
-    //                 0                1      2         3        4      5             6                 7           8           9    10                  11         12               13            14   15    16    17         18
-    //SELECT creatorGuid, giftCreatorGuid, count, duration, charges, flags, enchantments, randomPropertyId, durability, playedTime, text, transmogrification, upgradeId, enchantIllusion, bonusListIDs, bag, slot, item, itemEntry FROM character_inventory ci JOIN item_instance ii ON ci.item = ii.guid WHERE ci.guid = ? ORDER BY bag, slot
+    //              0             1               2                   3         4            5           6         7                8                    9             10             11       12                     13            14                  15               16   17    18
+    // SELECT ii.guid, ii.itemEntry, ii.creatorGuid, ii.giftCreatorGuid, ii.count, ii.duration, ii.charges, ii.flags, ii.enchantments, ii.randomPropertyId, ii.durability, ii.playedTime, ii.text, ii.transmogrification, ii.upgradeId, ii.enchantIllusion, ii.bonusListIDs, bag, slot FROM character_inventory ci JOIN item_instance ii ON ci.item = ii.guid WHERE ci.guid = ? ORDER BY bag, slot
     //NOTE: the "order by `bag`" is important because it makes sure
     //the bagMap is filled before items in the bags are loaded
     //NOTE2: the "order by `slot`" is needed because mainhand weapons are (wrongly?)
@@ -17568,8 +17585,8 @@ void Player::_LoadInventory(PreparedQueryResult result, uint32 timeDiff)
             Field* fields = result->Fetch();
             if (Item* item = _LoadItem(trans, zoneId, timeDiff, fields))
             {
-                ObjectGuid bagGuid = fields[15].GetUInt64() ? ObjectGuid::Create<HighGuid::Item>(fields[15].GetUInt64()) : ObjectGuid::Empty;
-                uint8  slot     = fields[16].GetUInt8();
+                ObjectGuid bagGuid = fields[17].GetUInt64() ? ObjectGuid::Create<HighGuid::Item>(fields[17].GetUInt64()) : ObjectGuid::Empty;
+                uint8 slot = fields[18].GetUInt8();
 
                 uint8 err = EQUIP_ERR_OK;
                 // Item is not in bag
@@ -17725,8 +17742,8 @@ void Player::_LoadVoidStorage(PreparedQueryResult result)
 Item* Player::_LoadItem(SQLTransaction& trans, uint32 zoneId, uint32 timeDiff, Field* fields)
 {
     Item* item = NULL;
-    ObjectGuid::LowType itemGuid  = fields[17].GetUInt64();
-    uint32 itemEntry = fields[18].GetUInt32();
+    ObjectGuid::LowType itemGuid = fields[0].GetUInt64();
+    uint32 itemEntry = fields[1].GetUInt32();
     if (ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemEntry))
     {
         bool remove = false;
@@ -17863,16 +17880,15 @@ void Player::_LoadMailedItems(Mail* mail)
     {
         Field* fields = result->Fetch();
 
-        ObjectGuid::LowType itemGuid = fields[15].GetUInt64();
-        uint32 itemTemplate = fields[16].GetUInt32();
+        ObjectGuid::LowType itemGuid = fields[0].GetUInt64();
+        uint32 itemEntry = fields[1].GetUInt32();
 
-        mail->AddItem(itemGuid, itemTemplate);
+        mail->AddItem(itemGuid, itemEntry);
 
-        ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemTemplate);
-
+        ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemEntry);
         if (!proto)
         {
-            TC_LOG_ERROR("entities.player", "%s has unknown item_template (ProtoType) in mailed items(GUID: " UI64FMTD " template: %u) in mail (%u), deleted.", GetGUID().ToString().c_str(), itemGuid, itemTemplate, mail->messageID);
+            TC_LOG_ERROR("entities.player", "%s has unknown item_template (ProtoType) in mailed items(GUID: " UI64FMTD " template: %u) in mail (%u), deleted.", GetGUID().ToString().c_str(), itemGuid, itemEntry, mail->messageID);
 
             stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_INVALID_MAIL_ITEM);
             stmt->setUInt64(0, itemGuid);
@@ -17886,7 +17902,8 @@ void Player::_LoadMailedItems(Mail* mail)
 
         Item* item = NewItemOrBag(proto);
 
-        if (!item->LoadFromDB(itemGuid, ObjectGuid::Create<HighGuid::Player>(fields[17].GetUInt64()), fields, itemTemplate))
+        ObjectGuid ownerGuid = fields[17].GetUInt64() ? ObjectGuid::Create<HighGuid::Player>(fields[17].GetUInt64()) : ObjectGuid::Empty;
+        if (!item->LoadFromDB(itemGuid, ownerGuid, fields, itemEntry))
         {
             TC_LOG_ERROR("entities.player", "Player::_LoadMailedItems - Item in mail (%u) doesn't exist !!!! - item guid: " UI64FMTD ", deleted from mail", mail->messageID, itemGuid);
 
@@ -21204,7 +21221,7 @@ void Player::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs)
         if (itr->second->state == PLAYERSPELL_REMOVED)
             continue;
         uint32 unSpellId = itr->first;
-        SpellInfo const* spellInfo = sSpellMgr->EnsureSpellInfo(unSpellId);
+        SpellInfo const* spellInfo = sSpellMgr->AssertSpellInfo(unSpellId);
 
         // Not send cooldown for this spells
         if (spellInfo->IsCooldownStartedOnEvent())
@@ -22800,7 +22817,7 @@ void Player::SetGroup(Group* group, int8 subgroup)
 void Player::SendInitialPacketsBeforeAddToMap()
 {
     /// Pass 'this' as argument because we're not stored in ObjectAccessor yet
-    GetSocial()->SendSocialList(this);
+    GetSocial()->SendSocialList(this, SOCIAL_FLAG_ALL);
 
     /// SMSG_SPELL_CATEGORY_COOLDOWN
     GetSession()->SendSpellCategoryCooldowns();
@@ -27221,4 +27238,10 @@ void Player::RemoveSpecializationSpells()
                     RemoveAurasDueToSpell(mastery);
         }
     }
+}
+
+void Player::RemoveSocial()
+{
+    sSocialMgr->RemovePlayerSocial(GetGUID());
+    m_social = nullptr;
 }

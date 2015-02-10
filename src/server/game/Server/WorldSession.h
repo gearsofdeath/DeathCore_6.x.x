@@ -198,6 +198,19 @@ namespace WorldPackets
         class LootMoney;
     }
 
+    namespace Mail
+    {
+        class MailCreateTextItem;
+        class MailDelete;
+        class MailGetList;
+        class MailMarkAsRead;
+        class MailQueryNextMailTime;
+        class MailReturnToSender;
+        class MailTakeItem;
+        class MailTakeMoney;
+        class SendMail;
+    }
+
     namespace Misc
     {
         class AreaTrigger;
@@ -251,6 +264,16 @@ namespace WorldPackets
         class QuestGiverCompleteQuest;
         class QuestGiverRequestReward;
         class QuestGiverQueryQuest;
+    }
+
+    namespace Social
+    {
+        class AddFriend;
+        class AddIgnore;
+        class DelFriend;
+        class DelIgnore;
+        class SendContactList;
+        class SetContactNotes;
     }
 
     namespace Spells
@@ -764,14 +787,17 @@ class WorldSession
         void HandleSetSelectionOpcode(WorldPackets::Misc::SetSelection& packet);
         void HandleStandStateChangeOpcode(WorldPackets::Misc::StandStateChange& packet);
         void HandleEmoteOpcode(WorldPacket& recvPacket);
-        void HandleContactListOpcode(WorldPacket& recvPacket);
-        void HandleAddFriendOpcode(WorldPacket& recvPacket);
+
+        // Social
+        void HandleContactListOpcode(WorldPackets::Social::SendContactList& packet);
+        void HandleAddFriendOpcode(WorldPackets::Social::AddFriend& packet);
         void HandleAddFriendOpcodeCallBack(PreparedQueryResult result, std::string const& friendNote);
-        void HandleDelFriendOpcode(WorldPacket& recvPacket);
-        void HandleAddIgnoreOpcode(WorldPacket& recvPacket);
+        void HandleDelFriendOpcode(WorldPackets::Social::DelFriend& packet);
+        void HandleAddIgnoreOpcode(WorldPackets::Social::AddIgnore& packet);
         void HandleAddIgnoreOpcodeCallBack(PreparedQueryResult result);
-        void HandleDelIgnoreOpcode(WorldPacket& recvPacket);
-        void HandleSetContactNotesOpcode(WorldPacket& recvPacket);
+        void HandleDelIgnoreOpcode(WorldPackets::Social::DelIgnore& packet);
+        void HandleSetContactNotesOpcode(WorldPackets::Social::SetContactNotes& packet);
+
         void HandleBugReportOpcode(WorldPacket& recvPacket);
 
         void HandleAreaTriggerOpcode(WorldPackets::Misc::AreaTrigger& packet);
@@ -937,16 +963,16 @@ class WorldSession
         // Black Market
         void HandleBlackMarketOpen(WorldPackets::BlackMarket::BlackMarketOpen& packet);
 
-        void HandleGetMailList(WorldPacket& recvData);
-        void HandleSendMail(WorldPacket& recvData);
-        void HandleMailTakeMoney(WorldPacket& recvData);
-        void HandleMailTakeItem(WorldPacket& recvData);
-        void HandleMailMarkAsRead(WorldPacket& recvData);
-        void HandleMailReturnToSender(WorldPacket& recvData);
-        void HandleMailDelete(WorldPacket& recvData);
+        void HandleGetMailList(WorldPackets::Mail::MailGetList& packet);
+        void HandleSendMail(WorldPackets::Mail::SendMail& packet);
+        void HandleMailTakeMoney(WorldPackets::Mail::MailTakeMoney& packet);
+        void HandleMailTakeItem(WorldPackets::Mail::MailTakeItem& packet);
+        void HandleMailMarkAsRead(WorldPackets::Mail::MailMarkAsRead& packet);
+        void HandleMailReturnToSender(WorldPackets::Mail::MailReturnToSender& packet);
+        void HandleMailDelete(WorldPackets::Mail::MailDelete& packet);
         void HandleItemTextQuery(WorldPacket& recvData);
-        void HandleMailCreateTextItem(WorldPacket& recvData);
-        void HandleQueryNextMailTime(WorldPacket& recvData);
+        void HandleMailCreateTextItem(WorldPackets::Mail::MailCreateTextItem& packet);
+        void HandleQueryNextMailTime(WorldPackets::Mail::MailQueryNextMailTime& packet);
         void HandleCancelChanneling(WorldPacket& recvData);
 
         void SendItemPageInfo(ItemTemplate* itemProto);
