@@ -256,16 +256,12 @@ void Player::UpdateArmor()
 
 float Player::GetHealthBonusFromStamina()
 {
-    // Taken from PaperDollFrame.lua - 4.3.4.15595
+    // Taken from PaperDollFrame.lua - 6.0.3.19085
     float ratio = 10.0f;
     if (gtOCTHpPerStaminaEntry const* hpBase = sGtOCTHpPerStaminaStore.EvaluateTable(getLevel() - 1, 0))
         ratio = hpBase->ratio;
 
-    float stamina = GetStat(STAT_STAMINA);
-    float baseStam = std::min(20.0f, stamina);
-    float moreStam = stamina - baseStam;
-
-    return baseStam + moreStam * ratio;
+   return baseStam + moreStam * ratio;
 }
 
 float Player::GetManaBonusFromIntellect()
@@ -318,17 +314,17 @@ void Player::UpdateAttackPowerAndDamage(bool ranged)
     if (ranged)
     {
         index = UNIT_FIELD_RANGED_ATTACK_POWER;
-        val2 = (level + std::max(GetStat(STAT_AGILITY) - 10.0f, 0.0f)) * entry->RangedAttackPowerPerAgility;
+        val2 = (level + std::max(GetStat(STAT_AGILITY), 0.0f)) * entry->RangedAttackPowerPerAgility;
     }
     else
     {
-        float strengthValue = std::max((GetStat(STAT_STRENGTH) - 10.0f) * entry->AttackPowerPerStrength, 0.0f);
-        float agilityValue = std::max((GetStat(STAT_AGILITY) - 10.0f) * entry->AttackPowerPerAgility, 0.0f);
+        float strengthValue = std::max(GetStat(STAT_STRENGTH) * entry->AttackPowerPerStrength, 0.0f);
+        float agilityValue = std::max(GetStat(STAT_AGILITY) * entry->AttackPowerPerAgility, 0.0f);
 
         SpellShapeshiftFormEntry const* form = sSpellShapeshiftFormStore.LookupEntry(GetShapeshiftForm());
         // Directly taken from client, SHAPESHIFT_FLAG_AP_FROM_STRENGTH ?
         if (form && form->Flags & 0x20)
-            agilityValue += std::max((GetStat(STAT_AGILITY) - 10.0f) * entry->AttackPowerPerStrength, 0.0f);
+            agilityValue += std::max(GetStat(STAT_AGILITY) * entry->AttackPowerPerStrength, 0.0f);
 
         val2 = strengthValue + agilityValue;
     }
