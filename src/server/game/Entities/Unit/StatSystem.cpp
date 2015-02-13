@@ -261,7 +261,11 @@ float Player::GetHealthBonusFromStamina()
     if (gtOCTHpPerStaminaEntry const* hpBase = sGtOCTHpPerStaminaStore.EvaluateTable(getLevel() - 1, 0))
         ratio = hpBase->ratio;
 
-   return baseStam + moreStam * ratio;
+    float stamina = GetStat(STAT_STAMINA);
+    float baseStam = std::min(20.0f, stamina);
+    float moreStam = stamina - baseStam;
+
+    return baseStam + moreStam * ratio;
 }
 
 float Player::GetManaBonusFromIntellect()
