@@ -1,25 +1,58 @@
+# Copyright (C) 2013-2015 DeathCore <http://www.noffearrdeathproject.net/>
+#
+# This file is free software; as a special exception the author gives
+# unlimited permission to copy and/or distribute it, with or without
+# modifications, as long as this notice is preserved.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
 language: cpp
-compiler:
-  - clang
+
+env:
+  global:
+    - secure: "kGeoqRlZKNa9TCQrVx8faZTwXEf7QDP+7aqfELc5gcpcPoaSHYG3B+q1ntJ3ugZ+d6EYaL68s8kC7GzwAQc4luyQeBFRnXAXS1wqiIpsusbSWRYUVnCaWv0Djt+jamTkR5dPMXAHvweufb2OO3P+8jp/7v2fhyUFaQE7BETTydg="
+
+addons:
+  coverity_scan:
+    project:
+      name: "NoffearrDeathProjecT/DeathCore_6.x.x"
+      description: "Build submitted via Travis CI"
+    notification_email: noffearrdeathproject@gmail.com
+    build_command_prepend: "cmake ../ -DCMAKE_BUILD_TYPE=Debug -DSCRIPTS=1 -DTOOLS=1"
+    build_command:   "make -j 16"
+    branch_pattern: coverity_scan
 
 git:
   depth: 1
 
+branches:
+  only:
+    - master
+    - coverity_scan
+
+compiler:
+  - clang
+
 before_install:
   - echo "yes" | sudo add-apt-repository ppa:kalakris/cmake
-  - echo "yes" | sudo add-apt-repository ppa:boost-latest/ppa
   - echo "yes" | sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-  - sudo apt-get -qq update
-  - sudo apt-get -qq install build-essential libtool gcc-4.8 g++-4.8 make cmake openssl
-  - sudo apt-get -qq install libssl-dev libmysqlclient15-dev libmysql++-dev libreadline6-dev zlib1g-dev libbz2-dev libzmq3-dev
-  - sudo apt-get -qq install libboost1.55-dev libboost-thread1.55-dev libboost-filesystem1.55-dev libboost-system1.55-dev libboost-program-options1.55-dev
-
+  - sudo apt-get update
+  - sudo apt-get install libace-dev
+  - sudo apt-get install libncurses5-dev
+  - sudo apt-get install build-essential autoconf libtool gcc-4.8 g++-4.8 make cmake git-core patch wget links zip unzip unrar
+  - sudo apt-get install openssl libssl-dev mysql-server mysql-client libmysqlclient15-dev libmysql++-dev libreadline6-dev zlib1g-dev libbz2-dev
+  
 script:
   - mkdir build
   - cd build
   - cmake ../ -DSCRIPTS=1 -DTOOLS=1
   - make -j16
-  
-  notifications:
-  email:
-    - suporte@noffearrdeathproject.net
+
+notifications:
+  irc:
+    channels:
+      - "irc.rizon.net#NoffearrDeathProjecT"
+    on_success: always
+    on_failure: always
