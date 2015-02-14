@@ -262,10 +262,8 @@ float Player::GetHealthBonusFromStamina()
         ratio = hpBase->ratio;
 
     float stamina = GetStat(STAT_STAMINA);
-    float baseStam = std::min(20.0f, stamina);
-    float moreStam = stamina - baseStam;
 
-    return baseStam + moreStam * ratio;
+    return stamina * ratio;
 }
 
 float Player::GetManaBonusFromIntellect()

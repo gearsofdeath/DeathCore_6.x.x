@@ -66,6 +66,7 @@
 #include "GuildMgr.h"
 #include "ReputationMgr.h"
 #include "AreaTrigger.h"
+#include "MiscPackets.h"
 
 pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
 {
@@ -410,7 +411,7 @@ void Spell::EffectSchoolDMG(SpellEffIndex effIndex)
                 if (m_spellInfo->HasAttribute(SPELL_ATTR0_CU_SHARE_DAMAGE))
                 {
                     uint32 count = 0;
-                    for (std::list<TargetInfo>::iterator ihit= m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+                    for (std::vector<TargetInfo>::iterator ihit= m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
                         if (ihit->effectMask & (1<<effIndex))
                             ++count;
 
@@ -589,7 +590,7 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                 case 31789:                                 // Righteous Defense (step 1)
                 {
                     // Clear targets for eff 1
-                    for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+                    for (std::vector<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
                         ihit->effectMask &= ~(1<<1);
 
                     // not empty (checked), copy
@@ -5690,10 +5691,8 @@ void Spell::EffectBind(SpellEffIndex /*effIndex*/)
         homeLoc.GetPositionX(), homeLoc.GetPositionY(), homeLoc.GetPositionZ(), homeLoc.GetMapId(), areaId);
 
     // zone update
-    WorldPacket data(SMSG_PLAYER_BOUND, 8 + 4);
-    data << m_caster->GetGUID();
-    data << uint32(areaId);
-    player->SendDirectMessage(&data);
+    WorldPackets::Misc::PlayerBound packet(m_caster->GetGUID(), areaId);
+    player->SendDirectMessage(packet.Write());
 }
 
 void Spell::EffectSummonRaFFriend(SpellEffIndex /*effIndex*/)
