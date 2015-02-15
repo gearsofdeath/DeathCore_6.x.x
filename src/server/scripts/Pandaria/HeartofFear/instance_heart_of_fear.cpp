@@ -24,7 +24,7 @@
 class instance_heart_of_fear : public InstanceMapScript
 {
     public:
-        instance_heart_of_fear() : InstanceMapScript("instance_heart_of_fear", 859) { }
+        instance_heart_of_fear() : InstanceMapScript("instance_heart_of_fear", 1009) { }
 
         struct instance_heart_of_fear_InstanceMapScript : public InstanceScript
         {

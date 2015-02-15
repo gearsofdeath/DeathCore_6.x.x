@@ -24,7 +24,7 @@
 class instance_siege_of_niuzao_temple : public InstanceMapScript
 {
     public:
-        instance_siege_of_niuzao_temple() : InstanceMapScript("instance_siege_of_niuzao_temple", 859) { }
+        instance_siege_of_niuzao_temple() : InstanceMapScript("instance_siege_of_niuzao_temple", 1011) { }
 
         struct instance_siege_of_niuzao_temple_InstanceMapScript : public InstanceScript
         {

@@ -33,44 +33,24 @@ class instance_temple_of_the_jade_serpent : public InstanceMapScript
 		{
 			instance_temple_of_the_jade_serpent_InstanceMapScript(Map* map) : InstanceScript(map)
 			{
-				BossWiseMariGUID			= 0;
-				WiseMariGateGUID			= 0;
-				BossLorewalkerStonestepGUID	= 0;
-				NpcZaoSunseekerGUID			= 0;
-				BossLiuFlameheartGUID		= 0;
-				BossShaOfDoubtGUID			= 0;
+                		SetHeaders(DataHeader);
+                		SetBossNumber(EncounterCount);
 			}
 
 			void OnCreatureCreate(Creature* creature)
 			{
 				switch (creature->GetEntry())
 				{
-					case BOSS_WISE_MARI:
-						BossWiseMariGUID = creature->GetGUID();
+                    			case BOSS_WISE_MARI:
+ 						break;
+                   			case BOSS_LOREWALKER_STONESTEP:
 						break;
-
-					case BOSS_LOREWALKER_STONESTEP:
-						BossLorewalkerStonestepGUID = creature->GetGUID();
+                    			case NPC_ZAO_SUNSEEKER:
 						break;
-
-					case NPC_ZAO_SUNSEEKER:
-						NpcZaoSunseekerGUID = creature->GetGUID();
+                    			case BOSS_LIU_FLAMEHEART:
 						break;
-						
-					case BOSS_LIU_FLAMEHEART:
-						BossLiuFlameheartGUID = creature->GetGUID();
+                    			case BOSS_SHA_OF_DOUBT:
 						break;
-						
-					case BOSS_SHA_OF_DOUBT:
-						BossShaOfDoubtGUID = creature->GetGUID();
-						break;
-		
-					default:
-						break;
-				}
-
-				switch (creature->GetGUID())
-				{
 					default:
 						break;
 				}
@@ -81,56 +61,47 @@ class instance_temple_of_the_jade_serpent : public InstanceMapScript
                 switch (go->GetEntry())
                 {
 					case GO_MARI_LOREWALKER_GATE:
-						WiseMariGateGUID = go->GetGUID();
+						break;
+					case GO_SHA_OF_DOUBT_GATE:
+						break;
+					case GO_LIU_GATE:
+						break;
+					default:
 						break;
 				}
 			}
 			
-			void OnGameObjectRemove(GameObject* go) 
+
+            bool SetBossState(uint32 type, EncounterState state) override
             {
-                switch (go->GetEntry())
+                if (!InstanceScript::SetBossState(type, state))
+                    return false;
+
+                if (state != DONE)
+                   return true;
+
+                switch (type)
                 {
-				}
-			}
-
-			uint64 GetData64(uint32 id) const 
-			{
-				switch (id)
-				{
-					case DATA_BOSS_WISE_MARI:
-						return BossWiseMariGUID;
-					
-					case DATA_WISE_MARI_GATE:
-						return WiseMariGateGUID;
-
-					case DATA_BOSS_LOREWALKER_STONESTEP:
-						return BossLorewalkerStonestepGUID;
-
-					case DATA_NPC_ZAO_SUNSEEKER:
-						return NpcZaoSunseekerGUID;
-					
-					case DATA_BOSS_LIU_FLAMEHEART:
-						return BossLiuFlameheartGUID;
-						
-					case DATA_BOSS_SHA_OF_DOUBT:
-						return BossShaOfDoubtGUID;
-						
-					default:
+                    			case DATA_BOSS_WISE_MARI:
 						break;
-				}
+                    			case DATA_BOSS_LOREWALKER_STONESTEP:
+						break;
+                    			case DATA_NPC_ZAO_SUNSEEKER:
+						break;
+                    			case DATA_BOSS_LIU_FLAMEHEART:
+						break;
+                    			case DATA_BOSS_SHA_OF_DOUBT:
+                        			break;
+                    			default:
+                        return true;
+                }
 
-				return 0;
-			}
+                return true;
+            }
 
-			protected:
-				uint64 BossWiseMariGUID;
-				uint64 WiseMariGateGUID;
-				uint64 BossLorewalkerStonestepGUID;
-				uint64 NpcZaoSunseekerGUID;
-				uint64 BossLiuFlameheartGUID;
-				uint64 BossShaOfDoubtGUID;
 
-		};
+        };
+
 
 		InstanceScript* GetInstanceScript(InstanceMap* map) const 
 		{

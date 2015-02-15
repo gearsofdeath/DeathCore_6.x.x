@@ -24,7 +24,7 @@
 class instance_terrace_of_the_endless_spring : public InstanceMapScript
 {
     public:
-        instance_terrace_of_the_endless_spring() : InstanceMapScript("instance_terrace_of_the_endless_spring", 859) { }
+        instance_terrace_of_the_endless_spring() : InstanceMapScript("instance_terrace_of_the_endless_spring", 996) { }
 
         struct instance_terrace_of_the_endless_spring_InstanceMapScript : public InstanceScript
         {

@@ -24,7 +24,7 @@
 class instance_gate_of_the_setting_sun : public InstanceMapScript
 {
     public:
-        instance_gate_of_the_setting_sun() : InstanceMapScript("instance_gate_of_the_setting_sun", 859) { }
+        instance_gate_of_the_setting_sun() : InstanceMapScript("instance_gate_of_the_setting_sun", 962) { }
 
         struct instance_gate_of_the_setting_sun_InstanceMapScript : public InstanceScript
         {

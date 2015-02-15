@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013-2015 DeathCore <http://www.noffearrdeathproject.net/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,396 +16,163 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "mogushan_vaults.h"
+
+enum Texts
+{
+    SAY_AGGRO       = 0,
+    SAY_EARTHQUAKE  = 1,
+    SAY_OVERRUN     = 2,
+    SAY_SLAY        = 3,
+    SAY_DEATH       = 4
+};
 
 enum Spells
 {
-	/* Amethyst Guardian */
-    SPELL_AMETHYST_OVERLOAD				= 115844,
-    SPELL_AMETHYST_PETRIFICATION		= 116057,
-    SPELL_AMETHYST_PETRIFICATION_BAR	= 131255,
-    SPELL_AMETHYST_TRUE_FORM			= 115829,
-    SPELL_AMETHYST_POOL					= 116235,
-
-	/* Cobalt Guardian */
-    SPELL_COBALT_OVERLOAD				= 115840,
-    SPELL_COBALT_PETRIFICATION			= 115852,
-    SPELL_COBALT_PETRIFICATION_BAR		= 131268,
-    SEPLL_COBALT_TRUE_FORM				= 115771,
-    SPELL_COBALT_MINE					= 129460,
-
-	/* Jade Guardian */
-    SPELL_JADE_OVERLOAD                 = 115842,
-    SPELL_JADE_PETRIFICATION            = 116006,
-    SPELL_JADE_PETRIFICATION_BAR        = 131269,
-    SEPLL_JADE_TRUE_FORM                = 115827,
-    SPELL_JADE_SHARDS                   = 116223,
-
-	/* Jasper Guardian */
-    SPELL_JASPER_OVERLOAD				= 115843,
-    SPELL_JASPER_PETRIFICATION			= 116036,
-    SPELL_JASPER_PETRIFICATION_BAR		= 131270,
-    SEPLL_JASPER_TRUE_FORM				= 115828,
-    SPELL_JASPER_CHAINS					= 130395,
-    SPELL_JASPER_CHAINS_VISUAL			= 130403,
-    SPELL_JASPER_CHAINS_DAMAGE			= 130404,
-
-    /* Shared Guardian Spells */
-    SPELL_SOLID_STONE					= 115745,
-	SPELL_STONE_VISUAL					= 123947,
-    SPELL_REND_FLESH					= 125206,
-    SPELL_ANIM_SIT						= 128886,
-    SPELL_ZERO_ENERGY					= 72242,
-    SPELL_TOTALY_PETRIFIED				= 115877,
-	SPELL_BERSERK						= 26662,
+    SPELL_EARTHQUAKE        = 153616,
+    SPELL_SUNDER_ARMOR      = 153726,
+    SPELL_CHAIN_LIGHTNING   = 153764,
+    SPELL_OVERRUN           = 154221,
+    SPELL_ENRAGE            = 157173,
+    SPELL_MARK_DEATH        = 153234,
+    SPELL_AURA_DEATH        = 153616
 };
 
 enum Events
 {
-
+    EVENT_ENRAGE    = 1,
+    EVENT_ARMOR     = 2,
+    EVENT_CHAIN     = 3,
+    EVENT_QUAKE     = 4,
+    EVENT_OVERRUN   = 5
 };
 
-enum Texts
-{
-
-};
-
-enum Phases
-{
-
-};
-
-enum Npcs
-{
-
-};
-
-class boss_amethyst_guardian : public CreatureScript
+class boss_the_stone_guard : public CreatureScript
 {
     public:
-        boss_amethyst_guardian() : CreatureScript("boss_amethyst_guardian") { }
+        boss_the_stone_guard() : CreatureScript("boss_the_stone_guard") { }
 
-		CreatureAI* GetAI(Creature* creature) const
+        struct boss_the_stone_guardAI : public ScriptedAI
         {
-            return new boss_amethyst_guardianAI(creature);
-        }
-
-        struct boss_amethyst_guardianAI : public ScriptedAI
-        {
-            boss_amethyst_guardianAI(Creature* creature) : ScriptedAI(creature)
+            boss_the_stone_guardAI(Creature* creature) : ScriptedAI(creature)
             {
-				instance = creature->GetInstanceScript();
+                Initialize();
             }
 
-			InstanceScript* instance;
-			EventMap events;
-			Creature* cobalt;
-			Creature* jade;
-			Creature* jasper;
-
-            void Reset()
+            void Initialize()
             {
-				events.Reset();
-
-				me->CastSpell(me, SPELL_STONE_VISUAL);
-				me->CastSpell(me, SPELL_ANIM_SIT);
-
-				if (instance)
-					instance->SetData(DATA_THE_STONE_GUARD, NOT_STARTED);
+                _inEnrage = false;
             }
 
-            void EnterCombat(Unit* /*who*/)
+            void Reset() override
             {
-				me->RemoveAurasDueToSpell(SPELL_STONE_VISUAL, me->GetGUID());
-				me->RemoveAurasDueToSpell(SPELL_ANIM_SIT, me->GetGUID());
-				
-				if (instance)
-				{
-					me->SetInCombatWithZone();
-					if (cobalt = me->FindNearestCreature(BOSS_COBALT_GUARDIAN, 99999.0f, true))
-						if (!cobalt->isInCombat())
-							cobalt->SetInCombatWithZone();
-					if (jade = me->FindNearestCreature(BOSS_JADE_GUARDIAN, 99999.0f, true))
-						if (!jade->isInCombat())
-							jade->SetInCombatWithZone();
-					if (jasper = me->FindNearestCreature(BOSS_JASPER_GUARDIAN, 99999.0f, true))
-						if (!jasper->isInCombat())
-							jasper->SetInCombatWithZone();
-				}
+                _events.Reset();
+                _events.ScheduleEvent(EVENT_ENRAGE, 0);
+                _events.ScheduleEvent(EVENT_ARMOR, urand(5000, 13000));
+                _events.ScheduleEvent(EVENT_CHAIN, urand(10000, 30000));
+                _events.ScheduleEvent(EVENT_QUAKE, urand(25000, 35000));
+                _events.ScheduleEvent(EVENT_OVERRUN, urand(30000, 45000));
+                Initialize();
             }
 
-            void JustDied(Unit* /*killer*/)
+            void KilledUnit(Unit* victim) override
             {
+                victim->CastSpell(victim, SPELL_MARK_DEATH, 0);
 
+                if (urand(0, 4))
+                    return;
+
+                Talk(SAY_SLAY);
             }
 
-            void UpdateAI(uint32 const diff)
+            void JustDied(Unit* /*killer*/) override
+            {
+                Talk(SAY_DEATH);
+            }
+
+            void EnterCombat(Unit* /*who*/) override
+            {
+                Talk(SAY_AGGRO);
+            }
+
+            void MoveInLineOfSight(Unit* who) override
+
+            {
+                if (who && who->GetTypeId() == TYPEID_PLAYER && me->IsValidAttackTarget(who))
+                    if (who->HasAura(SPELL_MARK_DEATH))
+                        who->CastSpell(who, SPELL_AURA_DEATH, 1);
+            }
+
+            void UpdateAI(uint32 diff) override
             {
                 if (!UpdateVictim())
-					return;
+                    return;
 
-                events.Update(diff);
-                
-                while (uint32 eventId = events.ExecuteEvent())
+                _events.Update(diff);
+
+                if (me->HasUnitState(UNIT_STATE_CASTING))
+                    return;
+
+                while (uint32 eventId = _events.ExecuteEvent())
                 {
                     switch (eventId)
                     {
+                        case EVENT_ENRAGE:
+                            if (!HealthAbovePct(20))
+                            {
+                                DoCast(me, SPELL_ENRAGE);
+                                _events.ScheduleEvent(EVENT_ENRAGE, 6000);
+                                _inEnrage = true;
+                            }
+                            break;
+                        case EVENT_OVERRUN:
+                            Talk(SAY_OVERRUN);
+                            DoCastVictim(SPELL_OVERRUN);
+                            _events.ScheduleEvent(EVENT_OVERRUN, urand(25000, 40000));
+                            break;
+                        case EVENT_QUAKE:
+                            if (urand(0, 1))
+                                return;
+
+                            Talk(SAY_EARTHQUAKE);
+
+                            //remove enrage before casting earthquake because enrage + earthquake = 16000dmg over 8sec and all dead
+                            if (_inEnrage)
+                                me->RemoveAurasDueToSpell(SPELL_ENRAGE);
+
+                            DoCast(me, SPELL_EARTHQUAKE);
+                            _events.ScheduleEvent(EVENT_QUAKE, urand(30000, 55000));
+                            break;
+                        case EVENT_CHAIN:
+                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 0.0f, true))
+                                DoCast(target, SPELL_CHAIN_LIGHTNING);
+                            _events.ScheduleEvent(EVENT_CHAIN, urand(7000, 27000));
+                            break;
+                        case EVENT_ARMOR:
+                            DoCastVictim(SPELL_SUNDER_ARMOR);
+                            _events.ScheduleEvent(EVENT_ARMOR, urand(10000, 25000));
+                            break;
                         default:
                             break;
                     }
                 }
-                
                 DoMeleeAttackIfReady();
             }
+
+            private:
+                EventMap _events;
+                bool _inEnrage;
         };
-};
 
-class boss_cobalt_guardian : public CreatureScript
-{
-    public:
-        boss_cobalt_guardian() : CreatureScript("boss_cobalt_guardian") { }
-
-		CreatureAI* GetAI(Creature* creature) const
+        CreatureAI* GetAI(Creature* creature) const override
         {
-            return new boss_cobalt_guardianAI(creature);
+            return new boss_the_stone_guardAI(creature);
         }
-
-        struct boss_cobalt_guardianAI : public ScriptedAI
-        {
-            boss_cobalt_guardianAI(Creature* creature) : ScriptedAI(creature)
-            {
-				instance = creature->GetInstanceScript();
-            }
-
-			InstanceScript* instance;
-			EventMap events;
-			Creature* amethyst;
-			Creature* jade;
-			Creature* jasper;
-
-            void Reset()
-            {
-				events.Reset();
-
-				me->CastSpell(me, SPELL_STONE_VISUAL);
-				me->CastSpell(me, SPELL_ANIM_SIT);
-
-				if (instance)
-					instance->SetData(DATA_THE_STONE_GUARD, NOT_STARTED);
-            }
-
-            void EnterCombat(Unit* /*who*/)
-            {
-				me->RemoveAurasDueToSpell(SPELL_STONE_VISUAL, me->GetGUID());
-				me->RemoveAurasDueToSpell(SPELL_ANIM_SIT, me->GetGUID());
-				
-				if (instance)
-				{
-					me->SetInCombatWithZone();
-					if (amethyst = me->FindNearestCreature(BOSS_AMETHYST_GUARDIAN, 99999.0f, true))
-						if (!amethyst->isInCombat())
-							amethyst->SetInCombatWithZone();
-					if (jade = me->FindNearestCreature(BOSS_JADE_GUARDIAN, 99999.0f, true))
-						if (!jade->isInCombat())
-							jade->SetInCombatWithZone();
-					if (jasper = me->FindNearestCreature(BOSS_JASPER_GUARDIAN, 99999.0f, true))
-						if (!jasper->isInCombat())
-							jasper->SetInCombatWithZone();
-				}
-            }
-
-            void JustDied(Unit* /*killer*/)
-            {
-
-            }
-
-            void UpdateAI(uint32 const diff)
-            {
-                if (!UpdateVictim())
-					return;
-
-                events.Update(diff);
-                
-                while (uint32 eventId = events.ExecuteEvent())
-                {
-                    switch (eventId)
-                    {
-                        default:
-                            break;
-                    }
-                }
-                
-                DoMeleeAttackIfReady();
-            }
-        };
-};
-
-class boss_jade_guardian : public CreatureScript
-{
-    public:
-        boss_jade_guardian() : CreatureScript("boss_jade_guardian") { }
-
-		CreatureAI* GetAI(Creature* creature) const
-        {
-            return new boss_jade_guardianAI(creature);
-        }
-
-        struct boss_jade_guardianAI : public ScriptedAI
-        {
-            boss_jade_guardianAI(Creature* creature) : ScriptedAI(creature)
-            {
-				instance = creature->GetInstanceScript();
-            }
-
-			InstanceScript* instance;
-			EventMap events;
-			Creature* amethyst;
-			Creature* cobalt;
-			Creature* jasper;
-
-            void Reset()
-            {
-				events.Reset();
-
-				me->CastSpell(me, SPELL_STONE_VISUAL);
-				me->CastSpell(me, SPELL_ANIM_SIT);
-
-				if (instance)
-					instance->SetData(DATA_THE_STONE_GUARD, NOT_STARTED);
-            }
-
-            void EnterCombat(Unit* /*who*/)
-            {
-				me->RemoveAurasDueToSpell(SPELL_STONE_VISUAL, me->GetGUID());
-				me->RemoveAurasDueToSpell(SPELL_ANIM_SIT, me->GetGUID());
-				
-				if (instance)
-				{
-					me->SetInCombatWithZone();
-					if (amethyst = me->FindNearestCreature(BOSS_AMETHYST_GUARDIAN, 99999.0f, true))
-						if (!amethyst->isInCombat())
-							amethyst->SetInCombatWithZone();
-					if (cobalt = me->FindNearestCreature(BOSS_COBALT_GUARDIAN, 99999.0f, true))
-						if (!cobalt->isInCombat())
-							cobalt->SetInCombatWithZone();
-					if (jasper = me->FindNearestCreature(BOSS_JASPER_GUARDIAN, 99999.0f, true))
-						if (!jasper->isInCombat())
-							jasper->SetInCombatWithZone();
-				}
-            }
-
-            void JustDied(Unit* /*killer*/)
-            {
-
-            }
-
-            void UpdateAI(uint32 const diff)
-            {
-                if (!UpdateVictim())
-					return;
-
-                events.Update(diff);
-                
-                while (uint32 eventId = events.ExecuteEvent())
-                {
-                    switch (eventId)
-                    {
-                        default:
-                            break;
-                    }
-                }
-                
-                DoMeleeAttackIfReady();
-            }
-        };
-};
-
-class boss_jasper_guardian : public CreatureScript
-{
-    public:
-        boss_jasper_guardian() : CreatureScript("boss_jasper_guardian") { }
-
-		CreatureAI* GetAI(Creature* creature) const
-        {
-            return new boss_jasper_guardianAI(creature);
-        }
-
-        struct boss_jasper_guardianAI : public ScriptedAI
-        {
-            boss_jasper_guardianAI(Creature* creature) : ScriptedAI(creature)
-            {
-				instance = creature->GetInstanceScript();
-            }
-
-			InstanceScript* instance;
-			EventMap events;
-			Creature* amethyst;
-			Creature* cobalt;
-			Creature* jade;
-
-            void Reset()
-            {
-				events.Reset();
-
-				me->CastSpell(me, SPELL_STONE_VISUAL);
-				me->CastSpell(me, SPELL_ANIM_SIT);
-
-				if (instance)
-					instance->SetData(DATA_THE_STONE_GUARD, NOT_STARTED);
-            }
-
-            void EnterCombat(Unit* /*who*/)
-            {
-				me->RemoveAurasDueToSpell(SPELL_STONE_VISUAL, me->GetGUID());
-				me->RemoveAurasDueToSpell(SPELL_ANIM_SIT, me->GetGUID());
-				
-				if (instance)
-				{
-					me->SetInCombatWithZone();
-					if (amethyst = me->FindNearestCreature(BOSS_AMETHYST_GUARDIAN, 99999.0f, true))
-						if (!amethyst->isInCombat())
-							amethyst->SetInCombatWithZone();
-					if (cobalt = me->FindNearestCreature(BOSS_COBALT_GUARDIAN, 99999.0f, true))
-						if (!cobalt->isInCombat())
-							cobalt->SetInCombatWithZone();
-					if (jade = me->FindNearestCreature(BOSS_JADE_GUARDIAN, 99999.0f, true))
-						if (!jade->isInCombat())
-							jade->SetInCombatWithZone();
-				}
-            }
-
-            void JustDied(Unit* /*killer*/)
-            {
-
-            }
-
-            void UpdateAI(uint32 const diff)
-            {
-                if (!UpdateVictim())
-					return;
-
-                events.Update(diff);
-                
-                while (uint32 eventId = events.ExecuteEvent())
-                {
-                    switch (eventId)
-                    {
-                        default:
-                            break;
-                    }
-                }
-                
-                DoMeleeAttackIfReady();
-            }
-        };
 };
 
 void AddSC_boss_the_stone_guard()
 {
-    new boss_amethyst_guardian();
-	new boss_cobalt_guardian();
-	new boss_jade_guardian();
-	new boss_jasper_guardian();
+    new boss_the_stone_guard();
 }

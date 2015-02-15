@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013-2015 DeathCore <http://www.noffearrdeathproject.net/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,178 +16,163 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-/* Notes :
-Xin le Maître d'armes : Script 0%					A faire : vérifier si les sorts fonctionnent.
-
-UPDATE creature_template SET ScriptName = 'boss_xin_the_weaponmaster' WHERE entry = 61398;
-
-INSERT INTO creature_text (entry, groupid, id, text, type, language, probability, emote, duration, sound, comment) VALUES
-(61398, 0, 0, "", 14, 0, 100, 0, 0, 28356, "Xin the Weaponmaster - Reset"),
-(61398, 1, 0, "Ah ! Qu'est-ce que c'est ... Encore des prétendants à ma couronne ! Ils sont tout petits et tout faibles !", 14, 0, 100, 0, 0, 28355, "Xin the Weaponmaster - Intro"),
-(61398, 2, 0, "Vous n'êtes pas les premiers à me défier, pécores. Vous ne serez pas les derniers.", 14, 0, 100, 0, 0, 28349, "Xin the Weaponmaster - Aggro"),
-(61398, 3, 0, "", 14, 0, 100, 0, 0, 28357, "Xin the Weaponmaster - Slay 1"),
-(61398, 3, 0, "", 14, 0, 100, 0, 0, 28358, "Xin the Weaponmaster - Slay 2"),
-(61398, 4, 0, "", 14, 0, 100, 0, 0, 28352, "Xin the Weaponmaster - Death"),
-(61398, 5, 0, "", 14, 0, 100, 0, 0, 28350, "Xin the Weaponmaster - Axes"), Affrontez la puissance de mon arsenal, gringalets !
-(61398, 6, 0, "", 14, 0, 100, 0, 0, 28351, "Xin the Weaponmaster - Blades"),
-(61398, 7, 0, "", 14, 0, 100, 0, 0, 28359, "Xin the Weaponmaster - Staves"),
-(61398, 8, 0, "", 14, 0, 100, 0, 0, 28360, "Xin the Weaponmaster - Bows"),
-(61398, 9, 0, "MA PUISSANCE EST SANS LIMITE !", 14, 0, 100, 0, 0, 28353, "Xin the Weaponmaster - 66%"),
-(61398, 10, 0, "ASSEZ JOUÉ LA COMÉDIE ! Vous allez connaître la douleur, pleutres !", 14, 0, 100, 0, 0, 28354, "Xin the Weaponmaster - 33%");
-*/
-
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "mogushan_palace.h"
 
-enum SpellIds
+enum Texts
 {
-	/* Xin the Weaponmaster */
-	SPELL_GROUND_SLAM			= 119684,
-	SPELL_INCITING_ROAR			= 122959,
+    SAY_AGGRO       = 0,
+    SAY_EARTHQUAKE  = 1,
+    SAY_OVERRUN     = 2,
+    SAY_SLAY        = 3,
+    SAY_DEATH       = 4
+};
 
-	/* Axes */
-
-
-	/* Blades */
-
-
-	/* Staves */
-	SPELL_CIRCLE_OF_FLAME		= 0,
-
-	/* Bow */
-
+enum Spells
+{
+    SPELL_EARTHQUAKE        = 153616,
+    SPELL_SUNDER_ARMOR      = 153726,
+    SPELL_CHAIN_LIGHTNING   = 153764,
+    SPELL_OVERRUN           = 154221,
+    SPELL_ENRAGE            = 157173,
+    SPELL_MARK_DEATH        = 153234,
+    SPELL_AURA_DEATH        = 153616
 };
 
 enum Events
 {
-	EVENT_GROUND_SLAM		= 1,
-};
-
-enum Phases
-{
-	PHASE_1			= 1,
-	PHASE_2			= 2,
-	PHASE_3			= 3,
-};
-
-enum Texts
-{
-	SAY_RESET		= 0,
-	SAY_INTRO		= 1,
-	SAY_AGGRO		= 2,
-	SAY_SLAY		= 3,
-	SAY_DEATH		= 4,
-	SAY_AXES		= 5,
-	SAY_BLADES		= 6,
-	SAY_STAVES		= 7,
-	SAY_BOWS		= 8,
-	SAY_EVENT_1		= 9,
-	SAY_EVENT_2		= 10
+    EVENT_ENRAGE    = 1,
+    EVENT_ARMOR     = 2,
+    EVENT_CHAIN     = 3,
+    EVENT_QUAKE     = 4,
+    EVENT_OVERRUN   = 5
 };
 
 class boss_xin_the_weaponmaster : public CreatureScript
 {
-public:
-	boss_xin_the_weaponmaster() : CreatureScript("boss_xin_the_weaponmaster") { }
+    public:
+        boss_xin_the_weaponmaster() : CreatureScript("boss_xin_the_weaponmaster") { }
 
-	CreatureAI* GetAI(Creature* creature) const
-	{
-		return new boss_xin_the_weaponmasterAI(creature);
-	}
+        struct boss_xin_the_weaponmasterAI : public ScriptedAI
+        {
+            boss_xin_the_weaponmasterAI(Creature* creature) : ScriptedAI(creature)
+            {
+                Initialize();
+            }
 
-	struct boss_xin_the_weaponmasterAI : public ScriptedAI
-	{
-		boss_xin_the_weaponmasterAI(Creature *creature) : ScriptedAI(creature)
-		{
-			instance = creature->GetInstanceScript();
-		}
+            void Initialize()
+            {
+                _inEnrage = false;
+            }
 
-		InstanceScript* instance;
-		EventMap events;
+            void Reset() override
+            {
+                _events.Reset();
+                _events.ScheduleEvent(EVENT_ENRAGE, 0);
+                _events.ScheduleEvent(EVENT_ARMOR, urand(5000, 13000));
+                _events.ScheduleEvent(EVENT_CHAIN, urand(10000, 30000));
+                _events.ScheduleEvent(EVENT_QUAKE, urand(25000, 35000));
+                _events.ScheduleEvent(EVENT_OVERRUN, urand(30000, 45000));
+                Initialize();
+            }
 
-		bool healthBelowSixtyPct;
-		bool healthBelowThirtyPct;
+            void KilledUnit(Unit* victim) override
+            {
+                victim->CastSpell(victim, SPELL_MARK_DEATH, 0);
 
-		void Reset()
-		{
-			healthBelowSixtyPct = false;
-			healthBelowThirtyPct = false;
-			events.Reset();
-		}
+                if (urand(0, 4))
+                    return;
 
-		void JustDied(Unit *pWho)
-		{
-			if (instance)
-				instance->SetBossState(DATA_BOSS_XIN_THE_WEAPONMASTER, DONE);
+                Talk(SAY_SLAY);
+            }
 
-			Talk(SAY_DEATH);
-		}
+            void JustDied(Unit* /*killer*/) override
+            {
+                Talk(SAY_DEATH);
+            }
 
-		void KilledUnit(Unit *pWho)
-		{
-			Talk(SAY_SLAY);
-		}
-		
-		void EnterEvadeMode()
-		{
-			if (instance)
-				instance->SetBossState(DATA_BOSS_XIN_THE_WEAPONMASTER, FAIL);
-		}
+            void EnterCombat(Unit* /*who*/) override
+            {
+                Talk(SAY_AGGRO);
+            }
 
-		void EnterCombat(Unit* /*who*/)
-		{
-			if (instance)
-				instance->SetBossState(DATA_GEKKAN, IN_PROGRESS);
+            void MoveInLineOfSight(Unit* who) override
 
-			me->SetInCombatWithZone();
-			Talk(SAY_AGGRO);
+            {
+                if (who && who->GetTypeId() == TYPEID_PLAYER && me->IsValidAttackTarget(who))
+                    if (who->HasAura(SPELL_MARK_DEATH))
+                        who->CastSpell(who, SPELL_AURA_DEATH, 1);
+            }
 
-			events.ScheduleEvent(EVENT_GROUND_SLAM, 20*IN_MILLISECONDS);
-		}
+            void UpdateAI(uint32 diff) override
+            {
+                if (!UpdateVictim())
+                    return;
 
-		void UpdateAI(uint32 diff)
-		{
-			if(!UpdateVictim())
-				return;
+                _events.Update(diff);
 
-			events.Update(diff);
+                if (me->HasUnitState(UNIT_STATE_CASTING))
+                    return;
 
-			if (!healthBelowSixtyPct && HealthBelowPct(66))
-			{
-				DoCast(SPELL_INCITING_ROAR);
-				healthBelowSixtyPct = true;
-			}
+                while (uint32 eventId = _events.ExecuteEvent())
+                {
+                    switch (eventId)
+                    {
+                        case EVENT_ENRAGE:
+                            if (!HealthAbovePct(20))
+                            {
+                                DoCast(me, SPELL_ENRAGE);
+                                _events.ScheduleEvent(EVENT_ENRAGE, 6000);
+                                _inEnrage = true;
+                            }
+                            break;
+                        case EVENT_OVERRUN:
+                            Talk(SAY_OVERRUN);
+                            DoCastVictim(SPELL_OVERRUN);
+                            _events.ScheduleEvent(EVENT_OVERRUN, urand(25000, 40000));
+                            break;
+                        case EVENT_QUAKE:
+                            if (urand(0, 1))
+                                return;
 
-			if (!healthBelowThirtyPct && HealthBelowPct(33))
-			{
-				DoCast(SPELL_INCITING_ROAR);
-				healthBelowThirtyPct = true;
-			}
+                            Talk(SAY_EARTHQUAKE);
 
-			while(uint32 eventId = events.ExecuteEvent())
-			{
-				switch(eventId)
-				{
-					if (instance)
-					{
-						case EVENT_GROUND_SLAM:
-							DoCast(me->getVictim(), SPELL_GROUND_SLAM);
+                            //remove enrage before casting earthquake because enrage + earthquake = 16000dmg over 8sec and all dead
+                            if (_inEnrage)
+                                me->RemoveAurasDueToSpell(SPELL_ENRAGE);
 
-							events.ScheduleEvent(EVENT_GROUND_SLAM, 20*IN_MILLISECONDS);
-							break;
+                            DoCast(me, SPELL_EARTHQUAKE);
+                            _events.ScheduleEvent(EVENT_QUAKE, urand(30000, 55000));
+                            break;
+                        case EVENT_CHAIN:
+                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1, 0.0f, true))
+                                DoCast(target, SPELL_CHAIN_LIGHTNING);
+                            _events.ScheduleEvent(EVENT_CHAIN, urand(7000, 27000));
+                            break;
+                        case EVENT_ARMOR:
+                            DoCastVictim(SPELL_SUNDER_ARMOR);
+                            _events.ScheduleEvent(EVENT_ARMOR, urand(10000, 25000));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                DoMeleeAttackIfReady();
+            }
 
-						default:
-							break;
-					}
-				}
-			}
+            private:
+                EventMap _events;
+                bool _inEnrage;
+        };
 
-			DoMeleeAttackIfReady();
-		}
-	};
+        CreatureAI* GetAI(Creature* creature) const override
+        {
+            return new boss_xin_the_weaponmasterAI(creature);
+        }
 };
+
 void AddSC_boss_xin_the_weaponmaster()
 {
-	new boss_xin_the_weaponmaster();
+    new boss_xin_the_weaponmaster();
 }

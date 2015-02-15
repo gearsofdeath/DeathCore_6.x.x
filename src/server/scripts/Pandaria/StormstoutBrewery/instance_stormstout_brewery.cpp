@@ -24,7 +24,7 @@
 class instance_stormstout_brewery : public InstanceMapScript
 {
     public:
-        instance_stormstout_brewery() : InstanceMapScript("instance_stormstout_brewery", 859) { }
+        instance_stormstout_brewery() : InstanceMapScript("instance_stormstout_brewery", 961) { }
 
         struct instance_stormstout_brewery_InstanceMapScript : public InstanceScript
         {

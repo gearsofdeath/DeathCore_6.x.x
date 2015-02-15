@@ -1,3 +1,13 @@
+# Copyright (C) 2013-2015 DeathCore <http://www.noffearrdeathproject.net/>
+#
+# This file is free software; as a special exception the author gives
+# unlimited permission to copy and/or distribute it, with or without
+# modifications, as long as this notice is preserved.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
 language: cpp
 compiler:
   - clang
@@ -22,13 +32,12 @@ install:
 
 script:
   - cd ..
-  - mysql -uroot < sql/create/create_mysql.sql
-  - mysql -udeathcore_6.x.x -pdeathcore_6.x.x auth < sql/base/auth_database.sql
-  - mysql -udeathcore_6.x.x -pdeathcore_6.x.x characters < sql/base/characters_database.sql
-  - mysql -udeathcore_6.x.x -pdeathcore_6.x.x world < sql/base/dev/world_database.sql
-  - mysql -udeathcore_6.x.x -pdeathcore_6.x.x hotfixes < sql/base/dev/hotfixes_database.sql
-  - cat sql/updates/world/*.sql | mysql -udeathcore_6.x.x -pdeathcore_6.x.x world
-  - cat sql/updates/hotfixes/*.sql | mysql -udeathcore_6.x.x -pdeathcore_6.x.x hotfixes
-  - mysql -uroot < sql/create/drop_mysql.sql
   - cd bin
   - make -j 10
+
+notifications:
+  irc:
+    channels:
+      - "irc.rizon.net#NoffearrDeathProjecT"
+    on_success: always
+    on_failure: always
